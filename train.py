@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 import os
 from torchvision import transforms
+import torchvision
 import torch
 from torch import nn, optim
 from torch.nn import functional as F
@@ -27,29 +28,26 @@ class GAN(pl.LightningModule):
                 [0.5 for _ in range(cfg.train.channels_img)],
                 [0.5 for _ in range(cfg.train.channels_img)])])
         self.criterion = nn.BCELoss()
+        self.fixed_noise = torch.randn(32, cfg.train.noise_dim, 1, 1)
+        self.initialise_weights(self.discriminator)
+        self.initialise_weights(self.generator)
 
-    def forward(self, x):
-        import ipdb;ipdb.set_trace()
-        return self.model(x)
-
-    def training_step(self, batch, batch_nb):
-
-        x, y = batch
-        loss = F.cross_entropy(self(x), y)
-        self.log('train/g_loss', loss)
-        self.log('train/d_loss', loss)
-        return loss
+    def initialise_weights(self, model):
+        for m in model.modules():
+            if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d, nn.BatchNorm2d)):
+                nn.init.normal_(m.weight.data, 0.0, 0.02)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
         noise = torch.randn(self.cfg.train.batch_size,
                 self.cfg.train.noise_dim, 1, 1).to(self.device)
         fake = self.generator(noise)
+
         # train generator
         if optimizer_idx == 0:
             output = self.discriminator(fake).reshape(-1)
             loss_gen = self.criterion(output, torch.ones_like(output))
-            self.log("loss_gen", loss_gen)
+            self.log('train/g_loss', loss_gen)
             return loss_gen
 
         # train discriminator
@@ -61,7 +59,7 @@ class GAN(pl.LightningModule):
             loss_disc_fake = self.criterion(disc_fake,
                     torch.zeros_like(disc_fake))
             loss_disc = (loss_disc_real + loss_disc_fake) / 2
-            self.log("loss_disc", loss_disc)
+            self.log('train/d_loss', loss_disc)
             return loss_disc
 
     def test_step(self, batch, batch_nb):
@@ -72,13 +70,18 @@ class GAN(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        return None
-        #make vis images
-        import ipdb;ipdb.set_trace()
-        x, y = batch
-        loss = F.cross_entropy(self(x), y)
-        self.log('validation/fid', loss)
-        self.log('validation/kid', loss)
+        real, _ = batch
+        noise = self.fixed_noise.to(self.device)
+        fake = self.generator(noise)
+        
+        img_grid_real = torchvision.utils.make_grid(real, normalize=True)
+        img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)
+        self.logger.experiment.add_image('Real', img_grid_real, self.current_epoch)
+        self.logger.experiment.add_image('Fake', img_grid_fake, self.current_epoch)
+
+        # compute FID and KID
+        self.log('validation/fid', 1)
+        self.log('validation/kid', 1)
 
     def configure_optimizers(self):
         opt_gen = optim.Adam(self.generator.parameters(),
