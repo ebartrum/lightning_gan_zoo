@@ -1,3 +1,5 @@
+name:
+    dc_gan
 train:
   lr: 2e-4
   beta1: 0.5

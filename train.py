@@ -114,7 +114,7 @@ class GAN(pl.LightningModule):
 def train(cfg: DictConfig) -> None:
     model = GAN(cfg)
     tb_logger = CustomTensorBoardLogger('output/',
-            name="simple_classifier", default_hp_metric=False)
+            name=cfg.name, default_hp_metric=False)
     checkpoint_callback = ModelCheckpoint(monitor='validation/fid',
             filename='model-{epoch:02d}-{fid:.2f}')
     trainer = pl.Trainer(gpus=1, max_epochs=4, logger=tb_logger,
