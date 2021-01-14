@@ -9,7 +9,7 @@ train:
   num_workers: 4
   channels_img: 1
   noise_dim: 100
-  num_epochs: 5
+  num_epochs: 99
   features_disc: 64
   features_gen: 64
 discriminator:

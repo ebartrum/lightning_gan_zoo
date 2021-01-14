@@ -117,7 +117,7 @@ def train(cfg: DictConfig) -> None:
             name=cfg.name, default_hp_metric=False)
     checkpoint_callback = ModelCheckpoint(monitor='validation/fid',
             filename='model-{epoch:02d}-{fid:.2f}')
-    trainer = pl.Trainer(gpus=1, max_epochs=4, logger=tb_logger,
+    trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs, logger=tb_logger,
             callbacks=[checkpoint_callback])    
     trainer.fit(model) 
 
