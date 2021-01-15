@@ -2,5 +2,5 @@
 GAN models implemented with pytorch lightning and hydra configuration (work in progress)
 
 Usage examples:
-python train.py +expt=dc_gan dataset=celeb_a
-python train.py +expt=dc_gan dataset=mnist
+```python train.py +expt=dc_gan dataset=celeb_a```<br/>
+```python train.py +expt=dc_gan dataset=mnist```
