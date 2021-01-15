@@ -10,11 +10,11 @@ from torch.nn import functional as F
 from pytorch_lightning.callbacks import ModelCheckpoint
 from core.logger import CustomTensorBoardLogger
 from core.networks import Discriminator, Generator
-from core.utils import init_weights
+from core.utils import init_weights, VerboseShapeExecution
 import hydra
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-    
+
 class GAN(pl.LightningModule):
     def __init__(self, cfg):
         super().__init__()
@@ -32,6 +32,7 @@ class GAN(pl.LightningModule):
         self.fixed_noise = torch.randn(32, cfg.train.noise_dim, 1, 1)
         self.discriminator.apply(init_weights)
         self.generator.apply(init_weights)
+        self.apply(VerboseShapeExecution)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
