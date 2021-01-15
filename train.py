@@ -13,6 +13,15 @@ from core.networks import Discriminator, Generator
 import hydra
 from omegaconf import DictConfig
 from hydra.utils import instantiate
+
+@torch.no_grad()
+def init_weights(m):
+    for m in model.modules():
+        if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
+            nn.init.normal_(m.weight.data, 0.0, 0.02)
+        elif isinstance(m, (nn.BatchNorm2d)):
+            nn.init.normal_(m.weight.data, 1.0, 0.02)
+            nn.init.constant_(m.bias.data, 0)
     
 class GAN(pl.LightningModule):
     def __init__(self, cfg):
@@ -29,13 +38,8 @@ class GAN(pl.LightningModule):
                 [0.5 for _ in range(cfg.train.channels_img)])])
         self.criterion = nn.BCELoss()
         self.fixed_noise = torch.randn(32, cfg.train.noise_dim, 1, 1)
-        self.initialise_weights(self.discriminator)
-        self.initialise_weights(self.generator)
-
-    def initialise_weights(self, model):
-        for m in model.modules():
-            if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d, nn.BatchNorm2d)):
-                nn.init.normal_(m.weight.data, 0.0, 0.02)
+        self.discriminator.apply(init_weights)
+        self.generator.apply(init_weights)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
@@ -43,15 +47,8 @@ class GAN(pl.LightningModule):
                 self.cfg.train.noise_dim, 1, 1).to(self.device)
         fake = self.generator(noise)
 
-        # train generator
-        if optimizer_idx == 0:
-            output = self.discriminator(fake).reshape(-1)
-            loss_gen = self.criterion(output, torch.ones_like(output))
-            self.log('train/g_loss', loss_gen)
-            return loss_gen
-
         # train discriminator
-        if optimizer_idx == 1:
+        if optimizer_idx == 0:
             disc_real = self.discriminator(real).reshape(-1)
             loss_disc_real = self.criterion(disc_real,
                     torch.ones_like(disc_real))
@@ -62,12 +59,19 @@ class GAN(pl.LightningModule):
             self.log('train/d_loss', loss_disc)
             return loss_disc
 
-    def test_step(self, batch, batch_nb):
-        import ipdb;ipdb.set_trace()
-        x, y = batch
-        loss = F.cross_entropy(self(x), y)
-        self.log('test/loss', loss)
-        return loss
+        # train generator
+        if optimizer_idx == 1:
+            output = self.discriminator(fake).reshape(-1)
+            loss_gen = self.criterion(output, torch.ones_like(output))
+            self.log('train/g_loss', loss_gen)
+            return loss_gen
+
+    # def test_step(self, batch, batch_nb):
+    #     import ipdb;ipdb.set_trace()
+    #     x, y = batch
+    #     loss = F.cross_entropy(self(x), y)
+    #     self.log('test/loss', loss)
+    #     return loss
 
     def validation_step(self, batch, batch_idx):
         real, _ = batch
@@ -76,8 +80,10 @@ class GAN(pl.LightningModule):
         
         img_grid_real = torchvision.utils.make_grid(real, normalize=True)
         img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)
-        self.logger.experiment.add_image('Real', img_grid_real, self.current_epoch)
-        self.logger.experiment.add_image('Fake', img_grid_fake, self.current_epoch)
+        self.logger.experiment.add_image('Real',
+                img_grid_real, self.current_epoch)
+        self.logger.experiment.add_image('Fake',
+                img_grid_fake, self.current_epoch)
 
         # compute FID and KID
         self.log('validation/fid', 1)
@@ -90,7 +96,7 @@ class GAN(pl.LightningModule):
         opt_disc = optim.Adam(self.discriminator.parameters(),
                 lr=self.cfg.train.lr,
                 betas=(self.cfg.train.beta1, self.cfg.train.beta2))
-        return [opt_gen, opt_disc], []
+        return [opt_disc, opt_gen], []
 
     def train_dataloader(self):
         return DataLoader(MNIST("~/datasets", train=True, download=True,
