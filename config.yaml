@@ -21,6 +21,8 @@ generator:
   channels_noise: "${train.noise_dim}"
   channels_img: "${train.channels_img}"
   features_g: "${train.features_gen}"
+debug:
+  verbose_shape: false
 hydra:
   output_subdir: null
   run:

@@ -32,7 +32,8 @@ class GAN(pl.LightningModule):
         self.fixed_noise = torch.randn(32, cfg.train.noise_dim, 1, 1)
         self.discriminator.apply(init_weights)
         self.generator.apply(init_weights)
-        self.apply(VerboseShapeExecution)
+        if cfg.debug.verbose_shape:
+            self.apply(VerboseShapeExecution)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
