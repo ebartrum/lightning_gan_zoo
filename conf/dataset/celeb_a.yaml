@@ -1,0 +1,12 @@
+_target_: torchvision.datasets.ImageFolder
+n_channels: 3
+root: ~/datasets/img_align_celeba
+train:
+  root: "${dataset.root}"
+  _target_: "${dataset._target_}"
+val:
+  root: "${dataset.root}"
+  _target_: "${dataset._target_}"
+test:
+  root: "${dataset.root}"
+  _target_: "${dataset._target_}"
