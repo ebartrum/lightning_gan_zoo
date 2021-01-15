@@ -23,6 +23,7 @@ generator:
   features_g: "${train.features_gen}"
 debug:
   verbose_shape: false
+  fast_dev_run: false
 hydra:
   output_subdir: null
   run:

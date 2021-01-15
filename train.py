@@ -117,6 +117,7 @@ def train(cfg: DictConfig) -> None:
             filename='model-{epoch:02d}-{fid:.2f}')
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
             logger=tb_logger, deterministic=True,
+            fast_dev_run=cfg.debug.fast_dev_run,
             callbacks=[checkpoint_callback])    
     trainer.fit(model) 
 
