@@ -1,10 +1,8 @@
 """
 Discriminator and Generator implementation from DCGAN paper
 """
-
 import torch
 import torch.nn as nn
-
 
 class Discriminator(nn.Module):
     def __init__(self, channels_img, features_d):
@@ -40,7 +38,6 @@ class Discriminator(nn.Module):
 
     def forward(self, x):
         return self.disc(x)
-
 
 class Generator(nn.Module):
     def __init__(self, channels_noise, channels_img, features_g):
