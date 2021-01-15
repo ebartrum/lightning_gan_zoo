@@ -10,18 +10,10 @@ from torch.nn import functional as F
 from pytorch_lightning.callbacks import ModelCheckpoint
 from core.logger import CustomTensorBoardLogger
 from core.networks import Discriminator, Generator
+from core.utils import init_weights
 import hydra
-from omegaconf import DictConfig
 from hydra.utils import instantiate
-
-@torch.no_grad()
-def init_weights(m):
-    for m in model.modules():
-        if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
-            nn.init.normal_(m.weight.data, 0.0, 0.02)
-        elif isinstance(m, (nn.BatchNorm2d)):
-            nn.init.normal_(m.weight.data, 1.0, 0.02)
-            nn.init.constant_(m.bias.data, 0)
+from omegaconf import DictConfig
     
 class GAN(pl.LightningModule):
     def __init__(self, cfg):
