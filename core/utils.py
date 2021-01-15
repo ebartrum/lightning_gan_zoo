@@ -19,7 +19,8 @@ class VerboseShapeExecution(nn.Module):
         for name, layer in self.model.named_children():
             layer.__name__ = name
             layer.register_forward_hook(
-                lambda layer, input, output: print(f"{layer.__name__}: {input[0].shape} --> {output.shape}")
+                lambda layer, input, output: print(
+                    f"{layer.__name__}: {input[0].shape} --> {output.shape}")
             )
 
     def forward(self, x: Tensor) -> Tensor:
