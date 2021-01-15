@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+from pytorch_lightning import seed_everything
 from torch.utils.data import DataLoader
 import os
 from torchvision import transforms
@@ -108,12 +109,14 @@ class GAN(pl.LightningModule):
 
 @hydra.main(config_path="conf", config_name="config")
 def train(cfg: DictConfig) -> None:
+    seed_everything(42)
     model = GAN(cfg)
     tb_logger = CustomTensorBoardLogger('output/',
             name=cfg.name, default_hp_metric=False)
     checkpoint_callback = ModelCheckpoint(monitor='validation/fid',
             filename='model-{epoch:02d}-{fid:.2f}')
-    trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs, logger=tb_logger,
+    trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
+            logger=tb_logger, deterministic=True,
             callbacks=[checkpoint_callback])    
     trainer.fit(model) 
 
