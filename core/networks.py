@@ -57,18 +57,18 @@ class Generator(nn.Module):
             ]))
 
     def _block(self, in_channels, out_channels, kernel_size, stride, padding):
-        return nn.Sequential(
-            nn.ConvTranspose2d(
+        return nn.Sequential(OrderedDict([
+            ('transpose_conv', nn.ConvTranspose2d(
                 in_channels,
                 out_channels,
                 kernel_size,
                 stride,
                 padding,
                 bias=False,
-            ),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(),
-        )
+                )),
+            ('batch_norm', nn.BatchNorm2d(out_channels)),
+            ('relu', nn.ReLU()),
+            ]))
 
     def forward(self, x):
         return self.net(x)
