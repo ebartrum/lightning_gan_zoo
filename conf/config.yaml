@@ -1,6 +1,5 @@
 # @package _global_
-name:
-  dc_gan
+name: MISSING
 train:
   lr: 2e-4
   beta1: 0.5
@@ -31,5 +30,5 @@ hydra:
   job_logging:
     disable_existing_loggers: false
 defaults:
- - hydra/job_logging: disabled
  - dataset: MISSING
+ - override hydra/job_logging: disabled
