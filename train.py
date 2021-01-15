@@ -14,6 +14,7 @@ from core.utils import init_weights, VerboseShapeExecution
 import hydra
 from hydra.utils import instantiate
 from omegaconf import DictConfig
+from core.figures.callback import FiguresCallback
 
 class GAN(pl.LightningModule):
     def __init__(self, cfg):
