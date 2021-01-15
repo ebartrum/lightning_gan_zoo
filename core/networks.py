@@ -11,7 +11,8 @@ class Discriminator(nn.Module):
         self.disc = nn.Sequential(OrderedDict([
             # input: N x channels_img x 64 x 64
             ('conv_in', nn.Conv2d(
-                channels_img, features_d, kernel_size=4, stride=2, padding=1
+                channels_img, features_d, kernel_size=4,
+                stride=2, padding=1, bias=False
             )),
             ('leaky_relu', nn.LeakyReLU(0.2)),
             # _block(in_channels, out_channels, kernel_size, stride, padding)
@@ -19,7 +20,8 @@ class Discriminator(nn.Module):
             ('block2', self._block(features_d * 2, features_d * 4, 4, 2, 1)),
             ('block3', self._block(features_d * 4, features_d * 8, 4, 2, 1)),
             # After all _block img output is 4x4 (Conv2d below makes into 1x1)
-            ('conv_out', nn.Conv2d(features_d * 8, 1, kernel_size=4, stride=2, padding=0)),
+            ('conv_out', nn.Conv2d(features_d * 8, 1, kernel_size=4,
+                stride=2, padding=0, bias=False)),
             ('sigmoid', nn.Sigmoid()),
             ]))
 
@@ -51,7 +53,7 @@ class Generator(nn.Module):
             ('block4', self._block(features_g * 4, features_g * 2, 4, 2, 1)),  # img: 32x32
             ('transpose_conv_out', nn.ConvTranspose2d(
                 features_g * 2, channels_img, kernel_size=4,
-                stride=2, padding=1)),
+                stride=2, padding=1, bias=False)),
             # Output: N x channels_img x 64 x 64
             ('tanh', nn.Tanh()),
             ]))
