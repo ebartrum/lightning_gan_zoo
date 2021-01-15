@@ -31,3 +31,4 @@ hydra:
     disable_existing_loggers: false
 defaults:
  - hydra/job_logging: disabled
+ - dataset: MISSING

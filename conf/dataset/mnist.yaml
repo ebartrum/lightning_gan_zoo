@@ -1,0 +1,20 @@
+# @package _group_
+_target_: torchvision.datasets.MNIST
+n_channels: 1
+parent_directory: ~/datasets
+download: False
+train:
+  root: "${dataset.parent_directory}"
+  _target_: "${dataset._target_}"
+  download: "${dataset.download}"
+  train: true
+val:
+  root: "${dataset.parent_directory}"
+  _target_: "${dataset._target_}"
+  download: "${dataset.download}"
+  train: false
+test:
+  root: "${dataset.parent_directory}"
+  _target_: "${dataset._target_}"
+  download: "${dataset.download}"
+  train: false

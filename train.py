@@ -1,6 +1,5 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
-from torchvision.datasets import MNIST
 import os
 from torchvision import transforms
 import torchvision
@@ -93,24 +92,21 @@ class GAN(pl.LightningModule):
         return [opt_disc, opt_gen], []
 
     def train_dataloader(self):
-        return DataLoader(MNIST("~/datasets", train=True, download=True,
-        transform=self.transform),
-            num_workers=self.cfg.train.num_workers,
-            batch_size=self.cfg.train.batch_size)
+        dataset = instantiate(self.cfg.dataset.train, transform=self.transform)
+        return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
+                batch_size=self.cfg.train.batch_size)
 
     def val_dataloader(self):
-        return DataLoader(MNIST("~/datasets", train=False, download=True,
-        transform=self.transform),
-            num_workers=self.cfg.train.num_workers,
+        dataset = instantiate(self.cfg.dataset.val, transform=self.transform)
+        return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
             batch_size=self.cfg.train.batch_size)
 
     def test_dataloader(self):
-        return DataLoader(MNIST("~/datasets", train=False, download=True,
-        transform=self.transform),
-            num_workers=self.cfg.train.num_workers,
+        dataset = instantiate(self.cfg.dataset.test, transform=self.transform)
+        return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
             batch_size=self.cfg.train.batch_size)
 
-@hydra.main(config_name="config")
+@hydra.main(config_path="conf", config_name="config")
 def train(cfg: DictConfig) -> None:
     model = GAN(cfg)
     tb_logger = CustomTensorBoardLogger('output/',
