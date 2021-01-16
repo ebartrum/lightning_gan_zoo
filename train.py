@@ -14,7 +14,6 @@ from core.utils import init_weights, VerboseShapeExecution
 import hydra
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-from core.figures.callback import FiguresCallback
 
 class GAN(pl.LightningModule):
     def __init__(self, cfg):
@@ -114,12 +113,15 @@ def train(cfg: DictConfig) -> None:
     model = GAN(cfg)
     tb_logger = CustomTensorBoardLogger('output/',
             name=cfg.name, default_hp_metric=False)
-    checkpoint_callback = ModelCheckpoint(monitor='validation/fid',
-            filename='model-{epoch:02d}-{fid:.2f}')
+    callbacks = [instantiate(fig, cfg.figure_details,
+        parent_dir=tb_logger.log_dir)
+            for fig in cfg.figures.values()]
+    callbacks.append(ModelCheckpoint(monitor='validation/fid',
+            filename='model-{epoch:02d}-{fid:.2f}'))
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
             logger=tb_logger, deterministic=True,
             fast_dev_run=cfg.debug.fast_dev_run,
-            callbacks=[checkpoint_callback])    
+            callbacks=callbacks)    
     trainer.fit(model) 
 
 if __name__ == "__main__":

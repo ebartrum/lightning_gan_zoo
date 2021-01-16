@@ -7,10 +7,11 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from itertools import product
 import imageio
+from pytorch_lightning.callbacks import Callback
 
-class Figure(ABC):
-    def __init__(self, cfg):
-       self.save_dir = cfg.dir 
+class Figure(Callback):
+    def __init__(self, cfg, parent_dir):
+       self.save_dir = os.path.join(parent_dir, cfg.dir)
        self.filename = cfg.filename if cfg.filename else\
                f"{self.__class__.__name__}.png"
        if not os.path.exists(self.save_dir):
@@ -34,10 +35,22 @@ class Figure(ABC):
         fig_array = self.draw(pl_module)
         self.save(fig_array)
 
+    def on_validation_end(self, trainer, pl_module):
+        print(f"Drawing & saving {self.filename}...")
+        self.draw_and_save(pl_module)
+
 class RainbowSquare(Figure):
-    def __init__(self, cfg):
-        super(RainbowSquare, self).__init__(cfg.dir)
+    def __init__(self, cfg, parent_dir):
+        super(RainbowSquare, self).__init__(cfg, parent_dir)
 
     def draw(self, pl_module):
         fig_array = np.random.random((512,512,3))
+        return fig_array
+
+class MiniRainbowSquare(Figure):
+    def __init__(self, cfg, parent_dir):
+        super(MiniRainbowSquare, self).__init__(cfg, parent_dir)
+
+    def draw(self, pl_module):
+        fig_array = np.random.random((128,128,3))
         return fig_array

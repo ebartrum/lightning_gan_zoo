@@ -24,6 +24,9 @@ generator:
 debug:
   verbose_shape: false
   fast_dev_run: false
+figure_details:
+    dir: "figures"
+    filename: ""
 hydra:
   output_subdir: null
   run:
