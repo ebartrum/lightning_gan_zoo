@@ -18,12 +18,13 @@ from core.submodules.gan_stability.metrics import FIDEvaluator
 import numpy as np
 
 class GAN(pl.LightningModule):
-    def __init__(self, cfg):
+    def __init__(self, cfg, logging_dir):
         super().__init__()
         self.discriminator = instantiate(cfg.discriminator)
         self.generator = instantiate(cfg.generator)
         self.cfg=cfg
         self.hparams=cfg
+        self.logging_dir=logging_dir
         self.transform = transforms.Compose([
             transforms.Resize(cfg.train.img_size),
             transforms.ToTensor(),
@@ -37,14 +38,13 @@ class GAN(pl.LightningModule):
         self.inception_eval = FIDEvaluator(
               batch_size=self.cfg.train.batch_size,
               resize=True,
-              n_samples=1000,
-              n_samples_fake=1000,
+              n_samples=1024,
+              n_samples_fake=1024,
             )
+        self.fid_cache_file = f'{logging_dir}/fid_cache_train.npz'
+        self.kid_cache_file = f'{logging_dir}/kid_cache_train.npz'
         if cfg.debug.verbose_shape:
             self.apply(VerboseShapeExecution)
-        fid_cache_file = './fid_cache_train.npz'
-        kid_cache_file = './kid_cache_train.npz'
-        self.inception_eval.initialize_target(self.val_dataloader(), cache_file=fid_cache_file, act_cache_file=kid_cache_file)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
@@ -132,6 +132,11 @@ class GAN(pl.LightningModule):
             
             sample_generator = sample()
 
+        if not self.inception_eval.is_initialized():
+            self.inception_eval.initialize_target(self.val_dataloader(),
+                    cache_file=self.fid_cache_file,
+                    act_cache_file=self.kid_cache_file)
+            
         fid, (kids, vars) = self.inception_eval.get_fid_kid(sample_generator)
         kid = np.mean(kids)
         return fid, kid
@@ -139,9 +144,9 @@ class GAN(pl.LightningModule):
 @hydra.main(config_path="conf", config_name="config")
 def train(cfg: DictConfig) -> None:
     seed_everything(42)
-    model = GAN(cfg)
     tb_logger = CustomTensorBoardLogger('output/',
             name=cfg.name, default_hp_metric=False)
+    model = GAN(cfg, logging_dir=tb_logger.log_dir)
     callbacks = [instantiate(fig, cfg.figure_details,
         parent_dir=tb_logger.log_dir)
             for fig in cfg.figures.values()]
@@ -149,8 +154,7 @@ def train(cfg: DictConfig) -> None:
             filename='model-{epoch:02d}-{fid:.2f}'))
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
             logger=tb_logger, deterministic=True,
-            fast_dev_run=cfg.debug.fast_dev_run,
-            callbacks=callbacks)    
+            fast_dev_run=cfg.debug.fast_dev_run, callbacks=callbacks)    
     trainer.fit(model) 
 
 if __name__ == "__main__":
