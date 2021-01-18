@@ -49,8 +49,9 @@ class AnimationFigure(Figure):
     @abstractmethod
     def draw(self, pl_module):
         """
-        Draw animation figure as a list of numpy arrays. Type should be float or double.
-        Range should be in [0,1]. Dim of each frame should be (H,W,3)
+        Draw animation figure as a list of numpy arrays representing frames.
+        Type should be float or double. Range should be in [0,1].
+        Dim of each frame should be (H,W,3)
         """
         pass
 
