@@ -58,7 +58,8 @@ class AnimationFigure(Figure):
         pil_list = []
         for array in array_list:
             assert array.min()>=0 and array.max()<=1,\
-                    "Figure array should lie in [0,1]"
+                    "Figure frames arrays should lie in [0,1]"
+            array = (array*255).astype('uint8')
             pil_list.append(Image.fromarray(array, 'RGB'))
         pil_list[0].save(f"{self.save_dir}/{self.filename}",
                        save_all=True, append_images=pil_list[1:],
