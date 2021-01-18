@@ -14,6 +14,8 @@ from core.utils import init_weights, VerboseShapeExecution
 import hydra
 from hydra.utils import instantiate
 from omegaconf import DictConfig
+from core.submodules.gan_stability.metrics import FIDEvaluator
+import numpy as np
 
 class GAN(pl.LightningModule):
     def __init__(self, cfg):
@@ -32,8 +34,17 @@ class GAN(pl.LightningModule):
         self.fixed_noise = torch.randn(32, cfg.train.noise_dim, 1, 1)
         self.discriminator.apply(init_weights)
         self.generator.apply(init_weights)
+        self.inception_eval = FIDEvaluator(
+              batch_size=self.cfg.train.batch_size,
+              resize=True,
+              n_samples=1000,
+              n_samples_fake=1000,
+            )
         if cfg.debug.verbose_shape:
             self.apply(VerboseShapeExecution)
+        fid_cache_file = './fid_cache_train.npz'
+        kid_cache_file = './kid_cache_train.npz'
+        self.inception_eval.initialize_target(self.val_dataloader(), cache_file=fid_cache_file, act_cache_file=kid_cache_file)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
@@ -79,9 +90,10 @@ class GAN(pl.LightningModule):
         self.logger.experiment.add_image('Fake',
                 img_grid_fake, self.current_epoch)
 
+        fid, kid = self.compute_fid_kid()
         # compute FID and KID
-        self.log('validation/fid', 1)
-        self.log('validation/kid', 1)
+        self.log('validation/fid', fid)
+        self.log('validation/kid', kid)
 
     def configure_optimizers(self):
         opt_gen = optim.Adam(self.generator.parameters(),
@@ -106,6 +118,23 @@ class GAN(pl.LightningModule):
         dataset = instantiate(self.cfg.dataset.test, transform=self.transform)
         return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
             batch_size=self.cfg.train.batch_size)
+
+    def compute_fid_kid(self, sample_generator=None):
+        if sample_generator is None:
+            def sample():
+                while True:
+                    noise = torch.randn(self.cfg.train.batch_size,
+                            self.cfg.train.noise_dim, 1, 1).to(self.device)
+                    rgb = self.generator(noise)
+                    # convert to uint8 and back to get correct binning
+                    rgb = (rgb / 2 + 0.5).mul_(255).clamp_(0, 255).to(torch.uint8).to(torch.float) / 255. * 2 - 1
+                    yield rgb.cpu()
+            
+            sample_generator = sample()
+
+        fid, (kids, vars) = self.inception_eval.get_fid_kid(sample_generator)
+        kid = np.mean(kids)
+        return fid, kid
 
 @hydra.main(config_path="conf", config_name="config")
 def train(cfg: DictConfig) -> None:
