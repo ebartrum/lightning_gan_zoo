@@ -96,6 +96,9 @@ class GAN(pl.LightningModule):
             # compute FID and KID
             self.log('validation/fid', fid)
             self.log('validation/kid', kid)
+        else:
+            self.log('validation/fid', 1)
+            self.log('validation/kid', 1)
 
     def configure_optimizers(self):
         opt_gen = optim.Adam(self.generator.parameters(),
