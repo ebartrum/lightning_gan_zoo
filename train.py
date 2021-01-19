@@ -35,16 +35,17 @@ class GAN(pl.LightningModule):
         self.fixed_noise = torch.randn(32, cfg.train.noise_dim, 1, 1)
         self.discriminator.apply(init_weights)
         self.generator.apply(init_weights)
-        self.inception_eval = FIDEvaluator(
-              batch_size=self.cfg.train.batch_size,
-              resize=True,
-              n_samples=1024,
-              n_samples_fake=1024,
-            )
-        self.fid_cache_file = f'{logging_dir}/fid_cache_train.npz'
-        self.kid_cache_file = f'{logging_dir}/kid_cache_train.npz'
         if cfg.debug.verbose_shape:
             self.apply(VerboseShapeExecution)
+        if cfg.val.use_fid:
+            self.inception_eval = FIDEvaluator(
+                  batch_size=self.cfg.train.batch_size,
+                  resize=True,
+                  n_samples=1024,
+                  n_samples_fake=1024,
+                )
+            self.fid_cache_file = f'{logging_dir}/fid_cache_train.npz'
+            self.kid_cache_file = f'{logging_dir}/kid_cache_train.npz'
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
@@ -90,10 +91,11 @@ class GAN(pl.LightningModule):
         self.logger.experiment.add_image('Fake',
                 img_grid_fake, self.current_epoch)
 
-        fid, kid = self.compute_fid_kid()
-        # compute FID and KID
-        self.log('validation/fid', fid)
-        self.log('validation/kid', kid)
+        if self.cfg.val.use_fid:
+            fid, kid = self.compute_fid_kid()
+            # compute FID and KID
+            self.log('validation/fid', fid)
+            self.log('validation/kid', kid)
 
     def configure_optimizers(self):
         opt_gen = optim.Adam(self.generator.parameters(),

@@ -12,6 +12,8 @@ train:
   num_epochs: 99
   features_disc: 64
   features_gen: 64
+val:
+  use_fid: True
 discriminator:
   _target_: core.networks.Discriminator
   channels_img: "${train.channels_img}"
