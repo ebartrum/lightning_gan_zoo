@@ -152,8 +152,9 @@ def train(cfg: DictConfig) -> None:
     tb_logger = CustomTensorBoardLogger('output/',
             name=cfg.name, default_hp_metric=False)
     model = GAN(cfg, logging_dir=tb_logger.log_dir)
-    callbacks = [instantiate(fig, cfg.figure_details,
-        parent_dir=tb_logger.log_dir)
+    callbacks = [instantiate(fig,
+                cfg=cfg.figure_details,
+                parent_dir=tb_logger.log_dir)
             for fig in cfg.figures.values()]
     callbacks.append(ModelCheckpoint(monitor='validation/fid',
             filename='model-{epoch:02d}-{fid:.2f}'))

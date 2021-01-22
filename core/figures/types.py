@@ -86,9 +86,36 @@ class MiniRainbowSquare(Figure):
         fig_array = np.random.random((128,128,3))
         return fig_array
 
-class MiniRainbowGIF(AnimationFigure):
+class Grid(Figure):
+    def __init__(self, cfg, parent_dir, ncol=4):
+        super(Grid, self).__init__(cfg, parent_dir)
+        self.ncol = ncol
+
+    @torch.no_grad()
+    def draw(self, pl_module):
+        grid = torchvision.utils.make_grid(torch.cat(
+            list(self.create_rows(pl_module)),dim=0),
+            nrow=self.ncol)
+        grid = grid.permute(1,2,0)
+        grid = torch.clamp(grid, 0, 1)
+        fig_array = grid.detach().cpu().numpy()
+        return fig_array
+
+class SampleGrid(Grid):
+    def __init__(self, cfg, parent_dir, ncol=4):
+        super(SampleGrid, self).__init__(cfg, parent_dir, ncol)
+
+    @torch.no_grad()
+    def create_rows(self, pl_module):
+        noise = torch.randn(16,
+                pl_module.cfg.train.noise_dim, 1, 1).to(pl_module.device)
+        fake = pl_module.generator(noise)
+        rows = fake[:4], fake[4:8], fake[8:12], fake[12:16]
+        return rows
+
+class Interpolation(AnimationFigure):
     def __init__(self, cfg, parent_dir):
-        super(MiniRainbowGIF, self).__init__(cfg, parent_dir)
+        super(Interpolation, self).__init__(cfg, parent_dir)
 
     def draw(self, pl_module):
         n_frames = 40
