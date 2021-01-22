@@ -71,22 +71,6 @@ class AnimationFigure(Figure):
         array_list = self.draw(pl_module)
         self.save(array_list)
 
-class RainbowSquare(Figure):
-    def __init__(self, cfg, parent_dir):
-        super(RainbowSquare, self).__init__(cfg, parent_dir)
-
-    def draw(self, pl_module):
-        fig_array = np.random.random((512,512,3))
-        return fig_array
-
-class MiniRainbowSquare(Figure):
-    def __init__(self, cfg, parent_dir):
-        super(MiniRainbowSquare, self).__init__(cfg, parent_dir)
-
-    def draw(self, pl_module):
-        fig_array = np.random.random((128,128,3))
-        return fig_array
-
 class Grid(Figure):
     def __init__(self, cfg, parent_dir, ncol=4):
         super(Grid, self).__init__(cfg, parent_dir)
