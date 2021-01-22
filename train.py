@@ -16,6 +16,7 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 from core.submodules.gan_stability.metrics import FIDEvaluator
 import numpy as np
+from glob import glob
 
 class GAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
@@ -145,7 +146,12 @@ class GAN(pl.LightningModule):
         fid, (kids, vars) = self.inception_eval.get_fid_kid(sample_generator)
         kid = np.mean(kids)
         return fid, kid
-
+def find_ckpt(ckpt_dir):
+    ckpt_list = [y for x in os.walk(ckpt_dir) for y in glob(os.path.join(x[0], '*.ckpt'))]
+    assert len(ckpt_list) <= 1, "Multiple ckpts found!"
+    if len(ckpt_list):
+        return ckpt_list[0]
+    
 @hydra.main(config_path="conf", config_name="config")
 def train(cfg: DictConfig) -> None:
     seed_everything(42)
@@ -158,9 +164,12 @@ def train(cfg: DictConfig) -> None:
             for fig in cfg.figures.values()]
     callbacks.append(ModelCheckpoint(monitor='validation/fid',
             filename='model-{epoch:02d}-{fid:.2f}'))
+    ckpt_path = find_ckpt(cfg.train.ckpt_dir)
+
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
             logger=tb_logger, deterministic=True,
-            fast_dev_run=cfg.debug.fast_dev_run, callbacks=callbacks)    
+            fast_dev_run=cfg.debug.fast_dev_run, callbacks=callbacks,
+            resume_from_checkpoint=ckpt_path)    
     trainer.fit(model) 
 
 if __name__ == "__main__":

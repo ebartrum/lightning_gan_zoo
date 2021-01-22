@@ -12,6 +12,7 @@ train:
   num_epochs: 99
   features_disc: 64
   features_gen: 64
+  ckpt_dir:
 val:
   use_fid: True
 discriminator:
