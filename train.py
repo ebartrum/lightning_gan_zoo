@@ -164,7 +164,7 @@ def train(cfg: DictConfig) -> None:
             for fig in cfg.figures.values()]
     callbacks.append(ModelCheckpoint(monitor='validation/fid',
             filename='model-{epoch:02d}-{fid:.2f}'))
-    ckpt_path = find_ckpt(cfg.train.ckpt_dir)
+    ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
 
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
             logger=tb_logger, deterministic=True,
