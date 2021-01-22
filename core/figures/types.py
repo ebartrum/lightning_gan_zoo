@@ -9,6 +9,7 @@ from itertools import product
 import imageio
 from pytorch_lightning.callbacks import Callback
 from PIL import Image
+from core.utils import interpolate_sphere
 
 class Figure(Callback):
     def __init__(self, cfg, parent_dir):
@@ -101,6 +102,14 @@ class Grid(Figure):
         fig_array = grid.detach().cpu().numpy()
         return fig_array
 
+class AnimationGrid(AnimationFigure):
+    def __init__(self, cfg, parent_dir, ncol=4):
+        super(AnimationGrid, self).__init__(cfg, parent_dir)
+        self.ncol = ncol
+
+    def draw(self, pl_module):
+        pass
+
 class SampleGrid(Grid):
     def __init__(self, cfg, parent_dir, ncol=4):
         super(SampleGrid, self).__init__(cfg, parent_dir, ncol)
@@ -113,14 +122,36 @@ class SampleGrid(Grid):
         rows = fake[:4], fake[4:8], fake[8:12], fake[12:16]
         return rows
 
-class Interpolation(AnimationFigure):
+class Interpolation(AnimationGrid):
     def __init__(self, cfg, parent_dir):
         super(Interpolation, self).__init__(cfg, parent_dir)
 
     def draw(self, pl_module):
         n_frames = 40
+        z1 = torch.randn(16,
+                pl_module.cfg.train.noise_dim, 1, 1).to(pl_module.device)
+        z2 = torch.randn(16,
+                pl_module.cfg.train.noise_dim, 1, 1).to(pl_module.device)
+        ts = np.linspace(0, 1, n_frames)
+        
         frame_list = []
-        for i in range(n_frames): 
-            frame_array = np.random.random((128,128,3))
-            frame_list.append(frame_array)
+        for t in ts: 
+            z = interpolate_sphere(z1, z2, float(t))
+            rows = self.create_rows(pl_module, z)
+            grid = self.make_grid(rows)
+            frame_list.append(grid)
         return frame_list
+
+    def create_rows(self, pl_module, z):
+        samples = pl_module.generator(z)
+        rows = samples[:4], samples[4:8], samples[8:12], samples[12:16]
+        return rows
+
+    def make_grid(self, rows):
+        grid = torchvision.utils.make_grid(torch.cat(
+            list(rows),dim=0),
+            nrow=self.ncol)
+        grid = grid.permute(1,2,0)
+        grid = torch.clamp(grid, 0, 1)
+        fig_array = grid.detach().cpu().numpy()
+        return fig_array
