@@ -2,11 +2,11 @@ _target_: torchvision.datasets.ImageFolder
 n_channels: 3
 root: ~/datasets/img_align_celeba
 train:
-  root: "${dataset.root}"
+  root: "${dataset.root}/train"
   _target_: "${dataset._target_}"
 val:
-  root: "${dataset.root}"
+  root: "${dataset.root}/val"
   _target_: "${dataset._target_}"
 test:
-  root: "${dataset.root}"
+  root: "${dataset.root}/test"
   _target_: "${dataset._target_}"
