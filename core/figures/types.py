@@ -65,7 +65,9 @@ class AnimationFigure(Figure):
             pil_list.append(Image.fromarray(array, 'RGB'))
         pil_list[0].save(f"{self.save_dir}/{self.filename}",
                        save_all=True, append_images=pil_list[1:],
-                       optimize=False, duration=len(array_list), loop=0)
+                       optimize=False,
+                       duration=40,
+                       loop=0)
 
     def draw_and_save(self, pl_module):
         array_list = self.draw(pl_module)
@@ -124,6 +126,7 @@ class Interpolation(AnimationGrid):
             rows = self.create_rows(pl_module, z)
             grid = self.make_grid(rows)
             frame_list.append(grid)
+        frame_list.extend(frame_list[::-1]) #forwards then backwards
         return frame_list
 
     def create_rows(self, pl_module, z):
