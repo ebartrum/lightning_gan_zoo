@@ -98,8 +98,8 @@ class GAN(pl.LightningModule):
             self.log('validation/fid', fid)
             self.log('validation/kid', kid)
         else:
-            self.log('validation/fid', 1./self.current_epoch)
-            self.log('validation/kid', 1./self.current_epoch)
+            self.log('validation/fid', 1./(1+self.current_epoch))
+            self.log('validation/kid', 1./(1+self.current_epoch))
 
     def configure_optimizers(self):
         opt_gen = optim.Adam(self.generator.parameters(),
