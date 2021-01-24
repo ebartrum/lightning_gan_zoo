@@ -15,6 +15,7 @@ train:
   ckpt_dir:
 val:
   use_fid: True
+  inception_stats_filepath: "${dataset.root}/val_inception_stats.pkl"
 discriminator:
   _target_: core.networks.Discriminator
   channels_img: "${train.channels_img}"

@@ -11,6 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from core.logger import CustomTensorBoardLogger
 from core.networks import Discriminator, Generator
 from core.utils import init_weights, VerboseShapeExecution
+from core.callback_fid import FIDCallback
 import hydra
 from hydra.utils import instantiate
 from omegaconf import DictConfig
@@ -27,7 +28,7 @@ class GAN(pl.LightningModule):
         self.hparams=cfg
         self.logging_dir=logging_dir
         self.transform = transforms.Compose([
-            transforms.Resize(cfg.train.img_size),
+            transforms.Resize((cfg.train.img_size,cfg.train.img_size)),
             transforms.ToTensor(),
             transforms.Normalize(
                 [0.5 for _ in range(cfg.train.channels_img)],
@@ -162,8 +163,13 @@ def train(cfg: DictConfig) -> None:
                 cfg=cfg.figure_details,
                 parent_dir=tb_logger.log_dir)
             for fig in cfg.figures.values()]
+                
     callbacks.append(ModelCheckpoint(monitor='validation/fid',
             filename='model-{epoch:02d}-{fid:.2f}'))
+    fid_callback = FIDCallback(db_stats=cfg.val.inception_stats_filepath,
+            cfg=cfg, z_sampler=None, data_transform=model.transform,
+            fid_name="FooBar")
+    import ipdb;ipdb.set_trace()
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
 
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
