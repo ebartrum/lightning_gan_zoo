@@ -127,7 +127,7 @@ class FIDCallback(pl.callbacks.base.Callback):
             fid = calc_fid(sample_mean, sample_cov, self.real_mean, self.real_cov)
 
             # log FID
-            pl_module.logger.log_metrics({self.fid_name: fid}, step=trainer.global_step)
+            pl_module.log(self.fid_name, fid)
             self.to(torch.device('cpu'))
 
         self.last_global_step = trainer.global_step
