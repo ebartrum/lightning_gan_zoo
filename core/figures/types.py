@@ -10,14 +10,17 @@ import imageio
 from pytorch_lightning.callbacks import Callback
 from PIL import Image
 from core.utils import interpolate_sphere
+from copy import deepcopy
 
 class Figure(Callback):
-    def __init__(self, cfg, parent_dir):
+    def __init__(self, cfg, parent_dir, monitor=None):
        self.save_dir = os.path.join(parent_dir, cfg.dir)
        self.filename = cfg.filename if cfg.filename else\
                f"{self.__class__.__name__}.png"
        if not os.path.exists(self.save_dir):
            os.makedirs(self.save_dir)
+       self.monitor = monitor
+       self.current_best_metric = np.inf
 
     @abstractmethod
     def draw(self, pl_module):
@@ -38,12 +41,19 @@ class Figure(Callback):
         self.save(fig_array)
 
     def on_validation_end(self, trainer, pl_module):
-        print(f"Drawing & saving {self.filename}...")
-        self.draw_and_save(pl_module)
+        current_metrics = deepcopy(
+                trainer.logger_connector.logged_metrics)
+        current_monitor = current_metrics[self.monitor]
+        if current_monitor < self.current_best_metric:
+            self.current_best_metric = current_monitor
+            print(f"Drawing & saving {self.filename}...")
+            self.draw_and_save(pl_module)
+        else:
+            print(f"Current metric {current_monitor} is worse than current best {self.current_best_metric}. Skipping figures")
 
 class AnimationFigure(Figure):
-    def __init__(self, cfg, parent_dir):
-       super(AnimationFigure, self).__init__(cfg, parent_dir)
+    def __init__(self, cfg, parent_dir, monitor):
+       super(AnimationFigure, self).__init__(cfg, parent_dir, monitor)
        self.filename = cfg.filename if cfg.filename else\
                f"{self.__class__.__name__}.gif"
 
@@ -74,8 +84,8 @@ class AnimationFigure(Figure):
         self.save(array_list)
 
 class Grid(Figure):
-    def __init__(self, cfg, parent_dir, ncol=4):
-        super(Grid, self).__init__(cfg, parent_dir)
+    def __init__(self, cfg, parent_dir, monitor, ncol=4):
+        super(Grid, self).__init__(cfg, parent_dir, monitor)
         self.ncol = ncol
 
     @torch.no_grad()
@@ -89,16 +99,16 @@ class Grid(Figure):
         return fig_array
 
 class AnimationGrid(AnimationFigure):
-    def __init__(self, cfg, parent_dir, ncol=4):
-        super(AnimationGrid, self).__init__(cfg, parent_dir)
+    def __init__(self, cfg, parent_dir, monitor, ncol=4):
+        super(AnimationGrid, self).__init__(cfg, parent_dir, monitor)
         self.ncol = ncol
 
     def draw(self, pl_module):
         pass
 
 class SampleGrid(Grid):
-    def __init__(self, cfg, parent_dir, ncol=4):
-        super(SampleGrid, self).__init__(cfg, parent_dir, ncol)
+    def __init__(self, cfg, parent_dir, monitor, ncol=4):
+        super(SampleGrid, self).__init__(cfg, parent_dir, monitor, ncol)
 
     @torch.no_grad()
     def create_rows(self, pl_module):
@@ -109,8 +119,8 @@ class SampleGrid(Grid):
         return rows
 
 class Interpolation(AnimationGrid):
-    def __init__(self, cfg, parent_dir):
-        super(Interpolation, self).__init__(cfg, parent_dir)
+    def __init__(self, cfg, parent_dir, monitor):
+        super(Interpolation, self).__init__(cfg, parent_dir, monitor)
 
     def draw(self, pl_module):
         n_frames = 40

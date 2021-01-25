@@ -115,7 +115,8 @@ def train(cfg: DictConfig) -> None:
     model = GAN(cfg, logging_dir=tb_logger.log_dir)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
-                parent_dir=tb_logger.log_dir)
+                parent_dir=tb_logger.log_dir,
+                monitor='fid')
             for fig in cfg.figures.values()]
                 
     callbacks.append(ModelCheckpoint(monitor='fid',
