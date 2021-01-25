@@ -6,3 +6,6 @@ Usage examples:<br/>
 ```python train.py +expt=dc_gan dataset=mnist```
 
 By default, the FID score will be monitored on the validation set during the validation step. Model checkpoints are saved when the best FID score is attained.
+
+### Models currently supported
+- DCGAN
