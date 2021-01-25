@@ -11,6 +11,7 @@ from tqdm import tqdm
 import os
 from hydra.utils import instantiate
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 def load_patched_inception_v3():
     inception_feat = InceptionV3([3], normalize_input=False).eval()
@@ -73,8 +74,8 @@ class FIDCallback(pl.callbacks.base.Callback):
                 batch_size=batch_size)
 
             total_batches = len(real_dataloader)
-            for i, (real_im, _) in enumerate(real_dataloader):
-                print(f"Getting features for real data. Computing batch {i}/{total_batches}")
+            for i, (real_im, _) in enumerate(tqdm(real_dataloader,
+                desc="Getting features for real data")):
                 real_im = real_im.to(device)
                 feat = self.inception(real_im)[0].view(real_im.shape[0], -1) # compute features
                 features.append(feat.to('cpu'))
@@ -115,9 +116,8 @@ class FIDCallback(pl.callbacks.base.Callback):
             features = []
             
             total_batches = len(self.z_samples)
-            for i, z in enumerate(self.z_samples):
-                print("Getting features for fake images.")
-                print(f"Computing batch {i+1}/{total_batches}")
+            for i, z in enumerate(tqdm(self.z_samples,
+                desc="Getting features for fake images.")):
                 inputs = z
                 fake = pl_module.generator(z) # get fake images
                 feat = self.inception(fake)[0].view(fake.shape[0], -1) # compute features
