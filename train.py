@@ -77,9 +77,6 @@ class GAN(pl.LightningModule):
         self.logger.experiment.add_image('Fake',
                 img_grid_fake, self.current_epoch)
 
-        self.log('validation/fid', 1./(1+self.current_epoch))
-        self.log('validation/kid', 1./(1+self.current_epoch))
-
     def configure_optimizers(self):
         opt_gen = optim.Adam(self.generator.parameters(),
                 lr=self.cfg.train.lr,
@@ -124,7 +121,7 @@ def train(cfg: DictConfig) -> None:
     callbacks.append(ModelCheckpoint(monitor='validation/fid',
             filename='model-{epoch:02d}-{fid:.2f}'))
     callbacks.append(FIDCallback(db_stats=cfg.val.inception_stats_filepath,
-            cfg=cfg, z_sampler=None, data_transform=model.transform,
+            cfg=cfg, data_transform=model.transform,
             fid_name="validation/fid"))
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
 

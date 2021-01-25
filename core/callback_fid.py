@@ -46,17 +46,13 @@ def calc_fid(sample_mean, sample_cov, real_mean, real_cov, eps=1e-6):
 class FIDCallback(pl.callbacks.base.Callback):
     '''
     db_stats - pickle file with inception stats on real data
-    z_sampler - function to sample generator input
     fid_name - name for logging
     n_samples - number of samples for FID
     '''
-    def __init__(self, db_stats, z_sampler, fid_name, cfg,
-            data_transform=None, n_samples=5000, batch_size=16,
-            eval_every=10000):
-        self.z_sampler = z_sampler
+    def __init__(self, db_stats, fid_name, cfg,
+            data_transform=None, n_samples=5000, batch_size=16):
         self.n_samples = n_samples
         self.batch_size = batch_size
-        self.eval_every = eval_every
         self.fid_name = fid_name
         self.inception = load_patched_inception_v3()
         self.cfg = cfg
@@ -105,7 +101,7 @@ class FIDCallback(pl.callbacks.base.Callback):
         I keep the model and the noise on CPU when it's not needed to preserve memory; could also be initialized on pl_module.device
         '''
         self.z_samples = [torch.randn(self.batch_size, self.cfg.train.noise_dim, 1, 1) for i in range(0, self.n_samples, self.batch_size)]
-        print('FID initialized')
+        print('\nFID initialized')
 
     @rank_zero_only
     def on_validation_epoch_start(self, trainer, pl_module):
