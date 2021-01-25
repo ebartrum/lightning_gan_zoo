@@ -13,13 +13,8 @@ from hydra.utils import instantiate
 from torch.utils.data import DataLoader
 
 def load_patched_inception_v3():
-    # inception = inception_v3(pretrained=True)
-    # inception_feat = Inception3Feature()
-    # inception_feat.load_state_dict(inception.state_dict())
     inception_feat = InceptionV3([3], normalize_input=False).eval()
-
     return inception_feat
-
 
 def calc_fid(sample_mean, sample_cov, real_mean, real_cov, eps=1e-6):
     ''' https://github.com/rosinality/stylegan2-pytorch/blob/master/fid.py '''
@@ -103,21 +98,16 @@ class FIDCallback(pl.callbacks.base.Callback):
         self.z_samples = [z.to(device) for z in self.z_samples]
 
     @rank_zero_only
-    def on_train_start(self, trainer, pl_module):
+    def on_validation_start(self, trainer, pl_module):
         '''
         Initialize random noise and inception module
         I keep the model and the noise on CPU when it's not needed to preserve memory; could also be initialized on pl_module.device
         '''
-        self.z_samples = [torch.randn(32, self.cfg.train.noise_dim, 1, 1) for i in range(0, self.n_samples, self.batch_size)]
+        self.z_samples = [torch.randn(self.batch_size, self.cfg.train.noise_dim, 1, 1) for i in range(0, self.n_samples, self.batch_size)]
         print('FID initialized')
-        # Keeping last global step so that the code is not run more than once in case when we use accumulating gradients; perhaps there's a better way in newer PL version
-        self.last_global_step = trainer.global_step - 1
 
     @rank_zero_only
-    def on_batch_start(self, trainer, pl_module):
-        if (trainer.global_step + 1) % self.eval_every != 0 or trainer.global_step == self.last_global_step: # + 1
-            return
-
+    def on_validation_epoch_start(self, trainer, pl_module):
         pl_module.eval()
         
         with torch.no_grad():
@@ -144,5 +134,4 @@ class FIDCallback(pl.callbacks.base.Callback):
             pl_module.logger.log_metrics({self.fid_name: fid}, step=trainer.global_step)
             self.to(torch.device('cpu'))
 
-        pl_module.train()
         self.last_global_step = trainer.global_step
