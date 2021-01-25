@@ -39,15 +39,15 @@ class GAN(pl.LightningModule):
         self.generator.apply(init_weights)
         if cfg.debug.verbose_shape:
             self.apply(VerboseShapeExecution)
-        if cfg.val.use_fid:
-            self.inception_eval = FIDEvaluator(
-                  batch_size=self.cfg.train.batch_size,
-                  resize=True,
-                  n_samples=1024,
-                  n_samples_fake=1024,
-                )
-            self.fid_cache_file = f'{logging_dir}/fid_cache_train.npz'
-            self.kid_cache_file = f'{logging_dir}/kid_cache_train.npz'
+        # if cfg.val.use_fid:
+        #     self.inception_eval = FIDEvaluator(
+        #           batch_size=self.cfg.train.batch_size,
+        #           resize=True,
+        #           n_samples=1024,
+        #           n_samples_fake=1024,
+        #         )
+        #     self.fid_cache_file = f'{logging_dir}/fid_cache_train.npz'
+        #     self.kid_cache_file = f'{logging_dir}/kid_cache_train.npz'
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
@@ -93,14 +93,14 @@ class GAN(pl.LightningModule):
         self.logger.experiment.add_image('Fake',
                 img_grid_fake, self.current_epoch)
 
-        if self.cfg.val.use_fid:
-            fid, kid = self.compute_fid_kid()
-            # compute FID and KID
-            self.log('validation/fid', fid)
-            self.log('validation/kid', kid)
-        else:
-            self.log('validation/fid', 1./(1+self.current_epoch))
-            self.log('validation/kid', 1./(1+self.current_epoch))
+        # if self.cfg.val.use_fid:
+        #     fid, kid = self.compute_fid_kid()
+        #     # compute FID and KID
+        #     self.log('validation/fid', fid)
+        #     self.log('validation/kid', kid)
+        # else:
+        self.log('validation/fid', 1./(1+self.current_epoch))
+        self.log('validation/kid', 1./(1+self.current_epoch))
 
     def configure_optimizers(self):
         opt_gen = optim.Adam(self.generator.parameters(),
@@ -126,27 +126,27 @@ class GAN(pl.LightningModule):
         return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
             batch_size=self.cfg.train.batch_size)
 
-    def compute_fid_kid(self, sample_generator=None):
-        if sample_generator is None:
-            def sample():
-                while True:
-                    noise = torch.randn(self.cfg.train.batch_size,
-                            self.cfg.train.noise_dim, 1, 1).to(self.device)
-                    rgb = self.generator(noise)
-                    # convert to uint8 and back to get correct binning
-                    rgb = (rgb / 2 + 0.5).mul_(255).clamp_(0, 255).to(torch.uint8).to(torch.float) / 255. * 2 - 1
-                    yield rgb.cpu()
+    # def compute_fid_kid(self, sample_generator=None):
+    #     if sample_generator is None:
+    #         def sample():
+    #             while True:
+    #                 noise = torch.randn(self.cfg.train.batch_size,
+    #                         self.cfg.train.noise_dim, 1, 1).to(self.device)
+    #                 rgb = self.generator(noise)
+    #                 # convert to uint8 and back to get correct binning
+    #                 rgb = (rgb / 2 + 0.5).mul_(255).clamp_(0, 255).to(torch.uint8).to(torch.float) / 255. * 2 - 1
+    #                 yield rgb.cpu()
             
-            sample_generator = sample()
+    #         sample_generator = sample()
 
-        if not self.inception_eval.is_initialized():
-            self.inception_eval.initialize_target(self.val_dataloader(),
-                    cache_file=self.fid_cache_file,
-                    act_cache_file=self.kid_cache_file)
+    #     if not self.inception_eval.is_initialized():
+    #         self.inception_eval.initialize_target(self.val_dataloader(),
+    #                 cache_file=self.fid_cache_file,
+    #                 act_cache_file=self.kid_cache_file)
             
-        fid, (kids, vars) = self.inception_eval.get_fid_kid(sample_generator)
-        kid = np.mean(kids)
-        return fid, kid
+    #     fid, (kids, vars) = self.inception_eval.get_fid_kid(sample_generator)
+    #     kid = np.mean(kids)
+    #     return fid, kid
 def find_ckpt(ckpt_dir):
     ckpt_list = [y for x in os.walk(ckpt_dir) for y in glob(os.path.join(x[0], '*.ckpt'))]
     assert len(ckpt_list) <= 1, "Multiple ckpts found!"
@@ -166,10 +166,9 @@ def train(cfg: DictConfig) -> None:
                 
     callbacks.append(ModelCheckpoint(monitor='validation/fid',
             filename='model-{epoch:02d}-{fid:.2f}'))
-    fid_callback = FIDCallback(db_stats=cfg.val.inception_stats_filepath,
+    callbacks.append(FIDCallback(db_stats=cfg.val.inception_stats_filepath,
             cfg=cfg, z_sampler=None, data_transform=model.transform,
-            fid_name="FooBar")
-    import ipdb;ipdb.set_trace()
+            fid_name="FooBar"))
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
 
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,

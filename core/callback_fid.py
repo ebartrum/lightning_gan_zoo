@@ -63,6 +63,7 @@ class FIDCallback(pl.callbacks.base.Callback):
         self.eval_every = eval_every
         self.fid_name = fid_name
         self.inception = load_patched_inception_v3()
+        self.cfg = cfg
 
         if not os.path.isfile(db_stats):
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -107,9 +108,7 @@ class FIDCallback(pl.callbacks.base.Callback):
         Initialize random noise and inception module
         I keep the model and the noise on CPU when it's not needed to preserve memory; could also be initialized on pl_module.device
         '''
-        import ipdb;ipdb.set_trace()
-        self.z_samples = [self.z_sampler(self.batch_size, device=torch.device('cpu')) for i in range(0, self.n_samples, self.batch_size)]
-        #self.inception = self.inception.to(pl_module.device)
+        self.z_samples = [torch.randn(32, self.cfg.train.noise_dim, 1, 1) for i in range(0, self.n_samples, self.batch_size)]
         print('FID initialized')
         # Keeping last global step so that the code is not run more than once in case when we use accumulating gradients; perhaps there's a better way in newer PL version
         self.last_global_step = trainer.global_step - 1
@@ -125,9 +124,12 @@ class FIDCallback(pl.callbacks.base.Callback):
             self.to(pl_module.device)
             features = []
             
+            total_batches = len(self.z_samples)
             for i, z in enumerate(self.z_samples):
+                print("Getting features for fake images.")
+                print(f"Computing batch {i+1}/{total_batches}")
                 inputs = z
-                fake = pl_module(z) # get fake images
+                fake = pl_module.generator(z) # get fake images
                 feat = self.inception(fake)[0].view(fake.shape[0], -1) # compute features
                 features.append(feat.to('cpu'))
 
@@ -139,8 +141,7 @@ class FIDCallback(pl.callbacks.base.Callback):
             fid = calc_fid(sample_mean, sample_cov, self.real_mean, self.real_cov)
 
             # log FID
-            for logger in pl_module.logger:
-                logger.log_metrics({self.fid_name: fid}, step=trainer.global_step)
+            pl_module.logger.log_metrics({self.fid_name: fid}, step=trainer.global_step)
             self.to(torch.device('cpu'))
 
         pl_module.train()
