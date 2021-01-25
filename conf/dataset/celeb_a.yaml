@@ -1,6 +1,6 @@
 _target_: torchvision.datasets.ImageFolder
 n_channels: 3
-root: /home/ed/datasets/img_align_celeba
+root: "${filepaths.celeb_a_root}"
 train:
   root: "${dataset.root}/train"
   _target_: "${dataset._target_}"

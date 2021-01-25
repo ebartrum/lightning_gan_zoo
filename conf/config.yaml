@@ -39,4 +39,5 @@ hydra:
     disable_existing_loggers: false
 defaults:
  - dataset: MISSING
+ - filepaths: local
  - override hydra/job_logging: disabled
