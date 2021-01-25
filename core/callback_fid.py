@@ -125,6 +125,7 @@ class FIDCallback(pl.callbacks.base.Callback):
             sample_cov = np.cov(features, rowvar=False)
 
             fid = calc_fid(sample_mean, sample_cov, self.real_mean, self.real_cov)
+            print(f"FID: {fid}\n")
 
             # log FID
             pl_module.log(self.fid_name, fid)

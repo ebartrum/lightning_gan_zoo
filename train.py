@@ -119,7 +119,7 @@ def train(cfg: DictConfig) -> None:
             for fig in cfg.figures.values()]
                 
     callbacks.append(ModelCheckpoint(monitor='validation/fid',
-            filename='model-{epoch:02d}-{fid:.2f}'))
+            filename='model-{epoch:02d}-{validation/fid:.2f}'))
     callbacks.append(FIDCallback(db_stats=cfg.val.inception_stats_filepath,
             cfg=cfg, data_transform=model.transform,
             fid_name="validation/fid"))
