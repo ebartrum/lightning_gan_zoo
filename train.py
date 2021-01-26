@@ -13,7 +13,7 @@ from core.networks import Discriminator, Generator
 from core.utils import init_weights, VerboseShapeExecution
 from core.callback_fid import FIDCallback
 import hydra
-from hydra.utils import instantiate
+from hydra.utils import instantiate, call
 from omegaconf import DictConfig
 from core.submodules.gan_stability.metrics import FIDEvaluator
 import numpy as np
@@ -41,29 +41,7 @@ class GAN(pl.LightningModule):
             self.apply(VerboseShapeExecution)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        real, _ = batch
-        noise = torch.randn(self.cfg.train.batch_size,
-                self.cfg.train.noise_dim, 1, 1).to(self.device)
-        fake = self.generator(noise)
-
-        # train discriminator
-        if optimizer_idx == 0:
-            disc_real = self.discriminator(real).reshape(-1)
-            loss_disc_real = self.criterion(disc_real,
-                    torch.ones_like(disc_real))
-            disc_fake = self.discriminator(fake.detach()).reshape(-1)
-            loss_disc_fake = self.criterion(disc_fake,
-                    torch.zeros_like(disc_fake))
-            loss_disc = (loss_disc_real + loss_disc_fake) / 2
-            self.log('train/d_loss', loss_disc)
-            return loss_disc
-
-        # train generator
-        if optimizer_idx == 1:
-            output = self.discriminator(fake).reshape(-1)
-            loss_gen = self.criterion(output, torch.ones_like(output))
-            self.log('train/g_loss', loss_gen)
-            return loss_gen
+        return call(self.cfg.train.training_step, self, batch, batch_idx, optimizer_idx)
 
     def validation_step(self, batch, batch_idx):
         real, _ = batch

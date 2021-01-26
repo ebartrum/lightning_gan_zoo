@@ -4,6 +4,8 @@ train:
   img_size: 64
   batch_size: 64 
   weight_clip: 1e-2
+  training_step:
+    _target_: core.training_steps.wgan
 discriminator:
   _target_: core.networks.Discriminator
   channels_img: "${train.channels_img}"
