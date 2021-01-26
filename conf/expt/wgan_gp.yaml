@@ -1,5 +1,5 @@
 # @package _global_
-name: wgan
+name: wgan_gp
 train:
   img_size: 64
   batch_size: 64 
