@@ -1,0 +1,28 @@
+# @package _global_
+name: wgan
+train:
+  img_size: 64
+  batch_size: 64 
+  training_step:
+    _target_: core.training_steps.wgan_gp
+discriminator:
+  _target_: core.networks.Discriminator
+  channels_img: "${train.channels_img}"
+  features_d: "${train.features_disc}"
+  norm: instance_norm2d
+  final_sigmoid: false
+optimisation:
+  lr: 1e-4
+  beta1: 0
+  beta2: 0.9
+loss_weight:
+  lambda_gp: 10
+optimiser:
+  _target_: torch.optim.Adam
+  lr: "${optimisation.lr}"
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+
+defaults:
+  - /figures@figures.sample_grid: sample_grid
+  - /figures@figures.interpolation: interpolation
+  - override /dataset: mnist
