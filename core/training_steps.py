@@ -3,7 +3,7 @@ from core.utils import gradient_penalty
 
 def dc(lm, batch, batch_idx, optimizer_idx):
     real, _ = batch
-    noise = torch.randn(lm.cfg.train.batch_size,
+    noise = torch.randn(len(real),
             lm.cfg.train.noise_dim, 1, 1).to(lm.device)
     fake = lm.generator(noise)
 
@@ -31,7 +31,7 @@ def wgan(lm, batch, batch_idx, optimizer_idx):
         p.data.clamp_(-lm.cfg.train.weight_clip, lm.cfg.train.weight_clip)
 
     real, _ = batch
-    noise = torch.randn(lm.cfg.train.batch_size,
+    noise = torch.randn(len(real),
             lm.cfg.train.noise_dim, 1, 1).to(lm.device)
     fake = lm.generator(noise)
 
@@ -52,7 +52,7 @@ def wgan(lm, batch, batch_idx, optimizer_idx):
 
 def wgan_gp(lm, batch, batch_idx, optimizer_idx):
     real, _ = batch
-    noise = torch.randn(lm.cfg.train.batch_size,
+    noise = torch.randn(len(real),
             lm.cfg.train.noise_dim, 1, 1).to(lm.device)
     fake = lm.generator(noise)
 
