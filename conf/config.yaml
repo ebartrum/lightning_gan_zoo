@@ -1,10 +1,6 @@
 # @package _global_
 name: MISSING
 train:
-  lr: 2e-4
-  beta1: 0.5
-  beta2: 0.999
-  betas: ["${train.beta1}", "${train.beta2}"]
   batch_size: 128
   img_size: 64
   num_workers: 4
@@ -14,6 +10,14 @@ train:
   features_disc: 64
   features_gen: 64
   ckpt_dir:
+optimisation:
+  lr: 2e-4
+  beta1: 0.5
+  beta2: 0.999
+optimiser:
+  _target_: torch.optim.Adam
+  lr: "${optimisation.lr}"
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
 val:
   use_fid: True
   inception_stats_filepath: "${dataset.root}/val_inception_stats.pkl"

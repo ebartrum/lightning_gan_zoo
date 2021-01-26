@@ -78,12 +78,10 @@ class GAN(pl.LightningModule):
                 img_grid_fake, self.current_epoch)
 
     def configure_optimizers(self):
-        opt_gen = optim.Adam(self.generator.parameters(),
-                lr=self.cfg.train.lr,
-                betas=self.cfg.train.betas)
-        opt_disc = optim.Adam(self.discriminator.parameters(),
-                lr=self.cfg.train.lr,
-                betas=self.cfg.train.betas)
+        opt_gen = instantiate(self.cfg.optimiser,
+                    self.generator.parameters())
+        opt_disc = instantiate(self.cfg.optimiser,
+                    self.discriminator.parameters())
         return [opt_disc, opt_gen], []
 
     def train_dataloader(self):
