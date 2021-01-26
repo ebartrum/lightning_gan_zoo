@@ -6,8 +6,10 @@ import torch.nn as nn
 from collections import OrderedDict
 
 class Discriminator(nn.Module):
-    def __init__(self, channels_img, features_d, final_sigmoid=True):
+    def __init__(self, channels_img, features_d,
+            norm="batch_norm", final_sigmoid=True):
         super(Discriminator, self).__init__()
+        self.norm = norm
         self.disc = nn.Sequential(OrderedDict([
             # input: N x channels_img x 64 x 64
             ('conv_in', nn.Conv2d(
@@ -36,7 +38,11 @@ class Discriminator(nn.Module):
                 padding,
                 bias=False,
                 )),
-            ('batch_norm', nn.BatchNorm2d(out_channels)),
+            ('batch_norm', nn.BatchNorm2d(out_channels))\
+                    if self.norm=='batch_norm' else\
+                    ('instance_norm2d', nn.InstanceNorm2d(out_channels))\
+                    if self.norm=='instance_norm2d' else\
+                    ('identity', nn.Identity()),
             ('leaky_relu', nn.LeakyReLU(0.2)),
             ]))
 
