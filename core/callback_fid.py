@@ -73,6 +73,9 @@ class FIDCallback(pl.callbacks.base.Callback):
             for i, (real_im, _) in enumerate(tqdm(real_dataloader,
                 desc="Getting features for real data")):
                 real_im = real_im.to(device)
+                if real_im.shape[1] == 1:
+                    #convert greyscale to RGB
+                    real_im = torch.cat(3*[real_im],dim=1)
                 feat = self.inception(real_im)[0].view(real_im.shape[0], -1) # compute features
                 features.append(feat.to('cpu'))
             features = torch.cat(features, 0).numpy()
@@ -116,6 +119,9 @@ class FIDCallback(pl.callbacks.base.Callback):
                 desc="Getting features for fake images.")):
                 inputs = z
                 fake = pl_module.generator(z) # get fake images
+                if fake.shape[1] == 1:
+                    #convert greyscale to RGB
+                    fake = torch.cat(3*[fake],dim=1)
                 feat = self.inception(fake)[0].view(fake.shape[0], -1) # compute features
                 features.append(feat.to('cpu'))
 
