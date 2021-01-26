@@ -1,4 +1,5 @@
 import torch
+from core.utils import gradient_penalty
 
 def dc(lm, batch, batch_idx, optimizer_idx):
     real, _ = batch
@@ -50,7 +51,6 @@ def wgan(lm, batch, batch_idx, optimizer_idx):
         return loss_gen
 
 def wgan_gp(lm, batch, batch_idx, optimizer_idx):
-    import ipdb;ipdb.set_trace()
     real, _ = batch
     noise = torch.randn(lm.cfg.train.batch_size,
             lm.cfg.train.noise_dim, 1, 1).to(lm.device)
@@ -60,7 +60,8 @@ def wgan_gp(lm, batch, batch_idx, optimizer_idx):
     if optimizer_idx == 0:
         disc_real = lm.discriminator(real).reshape(-1)
         disc_fake = lm.discriminator(fake.detach()).reshape(-1)
-        loss_disc = -(torch.mean(disc_real) - torch.mean(disc_fake))
+        gp = gradient_penalty(lm.discriminator, real, fake, device=lm.device)
+        loss_disc = (lm.cfg.loss_weight.lambda_gp*gp)-(torch.mean(disc_real) - torch.mean(disc_fake))
         lm.log('train/d_loss', loss_disc)
         return loss_disc
 

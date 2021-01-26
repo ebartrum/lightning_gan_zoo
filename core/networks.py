@@ -40,7 +40,7 @@ class Discriminator(nn.Module):
                 )),
             ('batch_norm', nn.BatchNorm2d(out_channels))\
                     if self.norm=='batch_norm' else\
-                    ('instance_norm2d', nn.InstanceNorm2d(out_channels))\
+                    ('instance_norm2d', nn.InstanceNorm2d(out_channels, affine=True))\
                     if self.norm=='instance_norm2d' else\
                     ('identity', nn.Identity()),
             ('leaky_relu', nn.LeakyReLU(0.2)),
