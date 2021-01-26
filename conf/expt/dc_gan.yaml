@@ -1,0 +1,16 @@
+# @package _global_
+name: dc_gan
+train:
+  img_size: 64
+optimisation:
+  lr: 2e-4
+  beta1: 0.5
+  beta2: 0.999
+optimiser:
+  _target_: torch.optim.Adam
+  lr: "${optimisation.lr}"
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+defaults:
+  - /figures@figures.sample_grid: sample_grid
+  - /figures@figures.interpolation: interpolation
+  - override /dataset: mnist

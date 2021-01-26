@@ -1,0 +1,23 @@
+# @package _global_
+name: wgan
+train:
+  img_size: 64
+  batch_size: 64 
+  weight_clip: 1e-2
+discriminator:
+  _target_: core.networks.Discriminator
+  channels_img: "${train.channels_img}"
+  features_d: "${train.features_disc}"
+  final_sigmoid: false
+optimisation:
+  lr: 5e-5
+  disc_freq: 5
+  gen_freq: 1
+optimiser:
+  _target_: torch.optim.RMSprop
+  lr: "${optimisation.lr}"
+
+defaults:
+  - /figures@figures.sample_grid: sample_grid
+  - /figures@figures.interpolation: interpolation
+  - override /dataset: mnist
