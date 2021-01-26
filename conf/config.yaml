@@ -15,6 +15,7 @@ optimisation:
   lr: MISSING
   disc_freq: 1
   gen_freq: 1
+loss_weight: MISSING
 optimiser: MISSING
 val:
   use_fid: True
