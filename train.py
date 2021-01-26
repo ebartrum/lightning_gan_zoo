@@ -78,11 +78,14 @@ class GAN(pl.LightningModule):
                 img_grid_fake, self.current_epoch)
 
     def configure_optimizers(self):
-        opt_gen = instantiate(self.cfg.optimiser,
-                    self.generator.parameters())
         opt_disc = instantiate(self.cfg.optimiser,
                     self.discriminator.parameters())
-        return [opt_disc, opt_gen], []
+        opt_gen = instantiate(self.cfg.optimiser,
+                    self.generator.parameters())
+        return ({'optimizer': opt_disc,
+                    'frequency': self.cfg.optimisation.disc_freq},
+               {'optimizer': opt_gen,
+                   'frequency': self.cfg.optimisation.gen_freq})
 
     def train_dataloader(self):
         dataset = instantiate(self.cfg.dataset.train, transform=self.transform)
@@ -121,7 +124,7 @@ def train(cfg: DictConfig) -> None:
             filename='model-{epoch:02d}-{fid:.2f}'))
     callbacks.append(FIDCallback(db_stats=cfg.val.inception_stats_filepath,
             cfg=cfg, data_transform=model.transform,
-            fid_name="fid"))
+            fid_name="fid", n_samples=cfg.val.fid_n_samples))
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
 
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
