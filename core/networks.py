@@ -6,7 +6,7 @@ import torch.nn as nn
 from collections import OrderedDict
 
 class Discriminator(nn.Module):
-    def __init__(self, channels_img, features_d):
+    def __init__(self, channels_img, features_d, final_sigmoid=True):
         super(Discriminator, self).__init__()
         self.disc = nn.Sequential(OrderedDict([
             # input: N x channels_img x 64 x 64
@@ -22,7 +22,8 @@ class Discriminator(nn.Module):
             # After all _block img output is 4x4 (Conv2d below makes into 1x1)
             ('conv_out', nn.Conv2d(features_d * 8, 1, kernel_size=4,
                 stride=2, padding=0, bias=False)),
-            ('sigmoid', nn.Sigmoid()),
+            ('sigmoid', nn.Sigmoid()) if final_sigmoid\
+                    else ('identity', nn.Identity())
             ]))
 
     def _block(self, in_channels, out_channels, kernel_size, stride, padding):
