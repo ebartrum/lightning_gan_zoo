@@ -80,10 +80,10 @@ class GAN(pl.LightningModule):
     def configure_optimizers(self):
         opt_gen = optim.Adam(self.generator.parameters(),
                 lr=self.cfg.train.lr,
-                betas=(self.cfg.train.beta1, self.cfg.train.beta2))
+                betas=self.cfg.train.betas)
         opt_disc = optim.Adam(self.discriminator.parameters(),
                 lr=self.cfg.train.lr,
-                betas=(self.cfg.train.beta1, self.cfg.train.beta2))
+                betas=self.cfg.train.betas)
         return [opt_disc, opt_gen], []
 
     def train_dataloader(self):

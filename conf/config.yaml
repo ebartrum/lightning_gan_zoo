@@ -4,6 +4,7 @@ train:
   lr: 2e-4
   beta1: 0.5
   beta2: 0.999
+  betas: ["${train.beta1}", "${train.beta2}"]
   batch_size: 128
   img_size: 64
   num_workers: 4
