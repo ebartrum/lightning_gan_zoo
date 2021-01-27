@@ -1,6 +1,6 @@
 # @package _global_
 name: MISSING
-version:
+version: "${hydra:job.id}"
 train:
   batch_size: 128
   img_size: 64
