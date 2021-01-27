@@ -6,7 +6,6 @@ import torch.utils.data
 import torch.utils.data.distributed
 import numpy as np
 
-
 class Generator(nn.Module):
     def __init__(self, z_dim, nlabels, size, embed_size=256, nfilter=64, nfilter_max=512, **kwargs):
         super().__init__()
@@ -20,8 +19,8 @@ class Generator(nn.Module):
         nlayers = int(np.log2(size / s0))
         self.nf0 = min(nf_max, nf * 2**nlayers)
 
-        self.embedding = nn.Embedding(nlabels, embed_size)
-        self.fc = nn.Linear(z_dim + embed_size, self.nf0*s0*s0)
+        self.fc = nn.Linear(z_dim, self.nf0*s0*s0)
+        
 
         blocks = []
         for i in range(nlayers):
@@ -39,19 +38,10 @@ class Generator(nn.Module):
         self.resnet = nn.Sequential(*blocks)
         self.conv_img = nn.Conv2d(nf, 3, 3, padding=1)
 
-    def forward(self, z, y):
-        assert(z.size(0) == y.size(0))
+    def forward(self, z):
+        z = z.squeeze(-1).squeeze(-1)
         batch_size = z.size(0)
-
-        if y.dtype is torch.int64:
-            yembed = self.embedding(y)
-        else:
-            yembed = y
-
-        yembed = yembed / torch.norm(yembed, p=2, dim=1, keepdim=True)
-
-        yz = torch.cat([z, yembed], dim=1)
-        out = self.fc(yz)
+        out = self.fc(z)
         out = out.view(batch_size, self.nf0, self.s0, self.s0)
 
         out = self.resnet(out)
@@ -89,21 +79,18 @@ class Discriminator(nn.Module):
         self.conv_img = nn.Conv2d(3, 1*nf, 3, padding=1)
         self.resnet = nn.Sequential(*blocks)
         self.fc = nn.Linear(self.nf0*s0*s0, nlabels)
+        self.final_sigmoid = nn.Sigmoid()
 
-    def forward(self, x, y):
-        assert(x.size(0) == y.size(0))
+    def forward(self, x):
+
         batch_size = x.size(0)
-
         out = self.conv_img(x)
         out = self.resnet(out)
         out = out.view(batch_size, self.nf0*self.s0*self.s0)
         out = self.fc(actvn(out))
 
-        index = Variable(torch.LongTensor(range(out.size(0))))
-        if y.is_cuda:
-            index = index.cuda()
-        out = out[index, y]
-
+        out = out.squeeze(1)
+        out = self.final_sigmoid(out)
         return out
 
 
@@ -140,7 +127,6 @@ class ResnetBlock(nn.Module):
         else:
             x_s = x
         return x_s
-
 
 def actvn(x):
     out = F.leaky_relu(x, 2e-1)

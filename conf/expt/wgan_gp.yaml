@@ -11,6 +11,11 @@ discriminator:
   features_d: "${train.features_disc}"
   norm: instance_norm2d
   final_sigmoid: false
+generator:
+  _target_: core.networks.Generator
+  channels_noise: "${train.noise_dim}"
+  channels_img: "${train.channels_img}"
+  features_g: "${train.features_gen}"
 optimisation:
   lr: 1e-4
   beta1: 0

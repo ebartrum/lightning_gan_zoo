@@ -56,3 +56,14 @@ def gradient_penalty(critic, real, fake, device="cpu"):
     gradient_norm = gradient.norm(2, dim=1)
     gradient_penalty = torch.mean((gradient_norm - 1) ** 2)
     return gradient_penalty
+
+def compute_grad2(d_out, x_in):
+    batch_size = x_in.size(0)
+    grad_dout = torch.autograd.grad(
+        outputs=d_out.sum(), inputs=x_in,
+        create_graph=True, retain_graph=True, only_inputs=True
+    )[0]
+    grad_dout2 = grad_dout.pow(2)
+    assert(grad_dout2.size() == x_in.size())
+    reg = grad_dout2.view(batch_size, -1).sum(1)
+    return reg

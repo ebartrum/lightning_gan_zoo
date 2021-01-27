@@ -1,0 +1,38 @@
+# @package _global_
+name: gan_stability_r1
+train:
+  batch_size: 64
+  img_size: 128
+  noise_dim: 256
+  training_step:
+    _target_: core.training_steps.gan_stability_r1
+optimisation:
+  lr: 1e-4
+  disc_freq: 1
+  lr_anneal: 1.
+  anneal_every: 150000
+optimiser:
+  _target_: torch.optim.RMSprop
+  lr: "${optimisation.lr}"
+loss_weight:
+  reg: 10
+generator:
+  _target_: core.submodules.gan_stability.models.resnet.Generator
+  z_dim: "${train.noise_dim}"
+  nlabels: 1
+  size: "${train.img_size}"
+  nfilter: 16
+  nfilter_max: 512
+  embed_size: 1
+discriminator:
+  _target_: core.submodules.gan_stability.models.resnet.Discriminator
+  z_dim: "${train.noise_dim}"
+  nlabels: 1
+  size: "${train.img_size}"
+  nfilter: 16
+  nfilter_max: 512
+  embed_size: 1
+defaults:
+  - /figures@figures.sample_grid: sample_grid
+  - /figures@figures.interpolation: interpolation
+  - override /dataset: mnist
