@@ -90,7 +90,7 @@ def find_ckpt(ckpt_dir):
 def train(cfg: DictConfig) -> None:
     seed_everything(42)
     tb_logger = CustomTensorBoardLogger('output/',
-            name=cfg.name, default_hp_metric=False)
+            name=cfg.name, version=cfg.version, default_hp_metric=False)
     model = GAN(cfg, logging_dir=tb_logger.log_dir)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
