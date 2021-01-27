@@ -3,3 +3,4 @@ output
 conf/expt/*
 .submitit*
 conf/filepaths/
+conf/submission_details/

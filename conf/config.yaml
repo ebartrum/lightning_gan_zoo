@@ -1,6 +1,6 @@
 # @package _global_
 name: MISSING
-version:
+version: "${submission_details.version}"
 train:
   batch_size: 128
   img_size: 64
@@ -46,4 +46,5 @@ hydra:
 defaults:
  - dataset: MISSING
  - filepaths: local
+ - submission_details: local
  - override hydra/job_logging: disabled
