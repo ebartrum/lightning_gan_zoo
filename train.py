@@ -90,9 +90,10 @@ def find_ckpt(ckpt_dir):
 @hydra.main(config_path="conf", config_name="config")
 def train(cfg: DictConfig) -> None:
     seed_everything(42)
-    job_id = submitit.JobEnvironment().job_id
+    version = submitit.JobEnvironment().job_id if cfg.version=="$slurm_job_id"\
+            else cfg.version
     tb_logger = CustomTensorBoardLogger('output/',
-            name=cfg.name, version=job_id, default_hp_metric=False)
+            name=cfg.name, version=version, default_hp_metric=False)
     model = GAN(cfg, logging_dir=tb_logger.log_dir)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
