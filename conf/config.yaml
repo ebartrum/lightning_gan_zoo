@@ -16,6 +16,8 @@ optimisation:
   lr: MISSING
   disc_freq: 1
   gen_freq: 1
+  lr_anneal: 1
+  anneal_every: -1
 loss_weight: MISSING
 optimiser: MISSING
 val:
