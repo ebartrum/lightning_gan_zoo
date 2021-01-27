@@ -18,6 +18,7 @@ from omegaconf import DictConfig
 from core.submodules.gan_stability.metrics import FIDEvaluator
 import numpy as np
 from glob import glob
+import submitit
 
 class GAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
@@ -89,8 +90,9 @@ def find_ckpt(ckpt_dir):
 @hydra.main(config_path="conf", config_name="config")
 def train(cfg: DictConfig) -> None:
     seed_everything(42)
+    job_id = submitit.JobEnvironment().job_id
     tb_logger = CustomTensorBoardLogger('output/',
-            name=cfg.name, version=cfg.version, default_hp_metric=False)
+            name=cfg.name, version=job_id, default_hp_metric=False)
     model = GAN(cfg, logging_dir=tb_logger.log_dir)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
