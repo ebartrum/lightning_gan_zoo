@@ -36,8 +36,8 @@ class GAN(pl.LightningModule):
                 [0.5 for _ in range(cfg.train.channels_img)])])
         self.criterion = nn.BCELoss()
         self.fixed_noise = torch.randn(32, cfg.train.noise_dim, 1, 1)
-        # self.discriminator.apply(init_weights) #TODO: put init_weights back in
-        # self.generator.apply(init_weights)
+        self.discriminator.apply(init_weights) #TODO: put init_weights back in
+        self.generator.apply(init_weights)
         if cfg.debug.verbose_shape:
             self.apply(VerboseShapeExecution)
 
@@ -45,6 +45,7 @@ class GAN(pl.LightningModule):
         return call(self.cfg.train.training_step, self, batch, batch_idx, optimizer_idx)
 
     def validation_step(self, batch, batch_idx):
+        import ipdb;ipdb.set_trace()
         real, _ = batch
         noise = self.fixed_noise.to(self.device)
         fake = self.generator(noise)
