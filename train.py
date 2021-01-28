@@ -101,11 +101,13 @@ def train(cfg: DictConfig) -> None:
     tb_logger = CustomTensorBoardLogger('output/',
             name=cfg.name, version=version, default_hp_metric=False)
     model = GAN(cfg, logging_dir=tb_logger.log_dir)
-    callbacks = [instantiate(fig,
-                cfg=cfg.figure_details,
-                parent_dir=tb_logger.log_dir,
-                monitor='fid')
-            for fig in cfg.figures.values()]
+    # callbacks = [instantiate(fig,
+    #             cfg=cfg.figure_details,
+    #             parent_dir=tb_logger.log_dir,
+    #             monitor='fid')
+    #         for fig in cfg.figures.values()]
+
+    callbacks = [] #temporarily disable figure callbacks
                 
     callbacks.append(ModelCheckpoint(monitor='fid',
             filename='model-{epoch:02d}-{fid:.2f}'))

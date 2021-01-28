@@ -98,3 +98,47 @@ def wgan_gp(lm, batch, batch_idx, optimizer_idx):
         loss_gen = -torch.mean(gen_fake)
         lm.log('train/g_loss', loss_gen)
         return loss_gen
+
+def graf(lm, batch, batch_idx, optimizer_idx):
+    import ipdb;ipdb.set_trace()
+    lm.generator.ray_sampler.iterations +=1   # for scale annealing
+    real, _ = batch
+    rgbs = img_to_patch(real.to(device))          # N_samples x C
+
+    # train discriminator
+    if optimizer_idx == 0:
+        import ipdb;ipdb.set_trace()
+        z = zdist.sample((batch_size,))
+        fake = lm.generator(z)
+        real.requires_grad_()
+        disc_real = lm.discriminator(real).reshape(-1)
+        loss_disc_real = lm.criterion(disc_real,
+                torch.ones_like(disc_real))
+        disc_fake = lm.discriminator(fake.detach()).reshape(-1)
+        loss_disc_fake = lm.criterion(disc_fake,
+                torch.zeros_like(disc_fake))
+        r1_reg = lm.cfg.loss_weight.reg * compute_grad2(disc_real, real).mean()
+        loss_disc = loss_disc_real + loss_disc_fake
+        lm.log('train/loss_disc', loss_disc)
+        lm.log('train/r1_reg', r1_reg)
+        return loss_disc + r1_reg
+
+    # train generator
+    if optimizer_idx == 1:
+        import ipdb;ipdb.set_trace()
+        # Generators updates
+        if lm.cfg.nerf.decrease_noise:
+          lm.generator.decrease_nerf_noise(it)
+
+        z = zdist.sample((batch_size,))
+        fake = lm.generator(z)
+        output = lm.discriminator(fake).reshape(-1)
+        loss_gen = lm.criterion(output, torch.ones_like(output))
+        lm.log('train/loss_gen', loss_gen)
+
+        #TODO: implement this
+        if cfg.training.take_model_average:
+            raise NotImplementedError
+            update_average(generator_test, generator,
+                           beta=config['training']['model_average_beta'])
+        return loss_gen
