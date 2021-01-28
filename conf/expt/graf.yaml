@@ -21,7 +21,11 @@ loss_weight:
   reg: 10
 generator:
   _target_: core.submodules.graf.graf.config.build_generator
-  config: "${}"
+  config:
+      nerf: "${nerf}"
+      train: "${train}"
+      data: "${data}"
+      ray_sampler: "${ray_sampler}"
 discriminator:
   _target_: core.submodules.graf.graf.models.discriminator.Discriminator
   nc: 3
