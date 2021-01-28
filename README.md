@@ -1,4 +1,4 @@
-# lightning_gan_zoo :zap: :elephant: :penguin: :panda_face:
+# Lightning GAN Zoo :zap: :elephant: :penguin: :panda_face:
 GAN models implemented with pytorch lightning and hydra configuration (work in progress)
 
 Usage examples:<br/>
