@@ -42,7 +42,7 @@ def gan_stability_r1(lm, batch, batch_idx, optimizer_idx):
         loss_disc_fake = lm.criterion(disc_fake,
                 torch.zeros_like(disc_fake))
         r1_reg = lm.cfg.loss_weight.reg * compute_grad2(disc_real, real).mean()
-        loss_disc = r1_reg + (loss_disc_real + loss_disc_fake) / 2
+        loss_disc = r1_reg + (loss_disc_real + loss_disc_fake) 
         lm.log('train/d_loss', loss_disc)
         return loss_disc
 
