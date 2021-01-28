@@ -112,9 +112,9 @@ def train(cfg: DictConfig) -> None:
                 
     callbacks.append(ModelCheckpoint(monitor='fid',
             filename='model-{epoch:02d}-{fid:.2f}'))
-    callbacks.append(FIDCallback(db_stats=cfg.val.inception_stats_filepath,
-            cfg=cfg, data_transform=model.transform,
-            fid_name="fid", n_samples=cfg.val.fid_n_samples))
+    # callbacks.append(FIDCallback(db_stats=cfg.val.inception_stats_filepath,
+    #         cfg=cfg, data_transform=model.transform,
+    #         fid_name="fid", n_samples=cfg.val.fid_n_samples))
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
 
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
