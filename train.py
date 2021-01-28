@@ -25,6 +25,7 @@ class GAN(pl.LightningModule):
         super().__init__()
         self.discriminator = instantiate(cfg.discriminator)
         self.generator = instantiate(cfg.generator)
+        import ipdb;ipdb.set_trace()
         self.cfg=cfg
         self.hparams=cfg
         self.logging_dir=logging_dir

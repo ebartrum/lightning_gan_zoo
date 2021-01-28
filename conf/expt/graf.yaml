@@ -1,9 +1,12 @@
 # @package _global_
 name: graf
 train:
-  batch_size: 64
+  batch_size: 8
   img_size: 128
   noise_dim: 256
+  noise_appearance_dim: 128         # This dimension is subtracted from "dim"
+  chunk: 32768                # 1024*32
+  netchunk: 65536             # 1024*64
   training_step:
     _target_: core.training_steps.graf
 optimisation:
@@ -17,21 +20,44 @@ optimiser:
 loss_weight:
   reg: 10
 generator:
-  _target_: core.submodules.gan_stability.models.resnet.Generator
-  z_dim: "${train.noise_dim}"
-  nlabels: 1
-  size: "${train.img_size}"
-  nfilter: 16
-  nfilter_max: 512
-  embed_size: 1
+  _target_: core.submodules.graf.graf.config.build_generator
+  config: "${}"
 discriminator:
-  _target_: core.submodules.gan_stability.models.resnet.Discriminator
-  z_dim: "${train.noise_dim}"
-  nlabels: 1
-  size: "${train.img_size}"
-  nfilter: 16
-  nfilter_max: 512
-  embed_size: 1
+  _target_: core.submodules.graf.graf.models.discriminator.Discriminator
+  nc: 3
+  ndf: 64
+  hflip: False                # Randomly flip discriminator input horizontally
+  n_ray_samples: "${ray_sampler.N_samples}"
+nerf:
+  i_embed: 0
+  use_viewdirs: True
+  multires: 10
+  multires_views: 4
+  N_samples: 64
+  N_importance: 0
+  netdepth: 8
+  netwidth: 256
+  netdepth_fine: 8
+  netwidth_fine: 256
+  perturb: 1.
+  raw_noise_std: 1.
+  decrease_noise: True
+data:
+  white_bkgd: False
+  radius: 9.5,10.5
+  near: 7.5
+  far: 12.5
+  fov: 10.
+  umin: 0
+  umax: 0.25
+  vmin: 0.32898992833716556 # 70 deg
+  vmax: 0.45642212862617093   # 85 deg
+  orthographic: False
+ray_sampler:
+  min_scale: 0.25
+  max_scale: 1.
+  scale_anneal: 0.0025        # no effect if scale_anneal<0, else the minimum scale decreases exponentially until converge to min_scale
+  N_samples: 1024             # 32*32, patchsize
 defaults:
   - /figures@figures.sample_grid: sample_grid
   - /figures@figures.interpolation: interpolation
