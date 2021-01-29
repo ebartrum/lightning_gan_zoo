@@ -50,9 +50,10 @@ class GAN(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         real, _ = batch
         rgbs = self.img_to_patch(real)  
+        noise = self.fixed_noise.to(self.device).squeeze(-1).squeeze(-1)
+        y = torch.zeros(len(real)).to(real.device)
+        fake = self.generator(noise,y)
         import ipdb;ipdb.set_trace()
-        noise = self.fixed_noise.to(self.device)
-        fake = self.generator(noise)
         
         img_grid_real = torchvision.utils.make_grid(real, normalize=True)
         img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)

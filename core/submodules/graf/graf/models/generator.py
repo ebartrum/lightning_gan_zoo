@@ -49,7 +49,7 @@ class Generator(nn.Module):
     def __call__(self, z, y=None, rays=None):
         bs = z.shape[0]
         if rays is None:
-            rays = torch.cat([self.sample_rays() for _ in range(bs)], dim=1)
+            rays = torch.cat([self.sample_rays() for _ in range(bs)], dim=1).to(z.device)
 
         render_kwargs = self.render_kwargs_test if self.use_test_kwargs else self.render_kwargs_train
         render_kwargs = dict(render_kwargs)        # copy

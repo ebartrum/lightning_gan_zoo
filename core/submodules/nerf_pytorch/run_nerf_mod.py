@@ -21,14 +21,12 @@ DEBUG = False
 
 relu = partial(F.relu, inplace=True)            # saves a lot of memory
 
-
 def batchify(fn, chunk):
     if chunk is None:
         return fn
     def ret(inputs):
         return torch.cat([fn(inputs[i:i+chunk]) for i in range(0, inputs.shape[0], chunk)], 0)
     return ret
-
 
 def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, features=None, netchunk=1024*64,
                 feat_dim_appearance=0):
@@ -65,7 +63,6 @@ def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, features=None, net
 
 
 def batchify_rays(rays_flat, chunk=1024*32, **kwargs):
-
     all_ret = {}
     features = kwargs.get('features')
     for i in range(0, rays_flat.shape[0], chunk):
@@ -288,7 +285,7 @@ def render_rays(ray_batch,
     bounds = torch.reshape(ray_batch[...,6:8], [-1,1,2])
     near, far = bounds[...,0], bounds[...,1] # [-1,1]
 
-    t_vals = torch.linspace(0., 1., steps=N_samples)
+    t_vals = torch.linspace(0., 1., steps=N_samples).to(ray_batch.device)
     if not lindisp:
         z_vals = near * (1.-t_vals) + far * (t_vals)
     else:
@@ -302,7 +299,7 @@ def render_rays(ray_batch,
         upper = torch.cat([mids, z_vals[...,-1:]], -1)
         lower = torch.cat([z_vals[...,:1], mids], -1)
         # stratified samples in those intervals
-        t_rand = torch.rand(z_vals.shape)
+        t_rand = torch.rand(z_vals.shape, device=ray_batch.device)
 
         # Pytest, overwrite u with numpy's fixed random numbers
         if pytest:
