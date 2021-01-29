@@ -10,7 +10,7 @@ class ImgToPatch(nn.Module):
         self.ray_sampler = ray_sampler
         self.hwf = hwf      # camera intrinsics
 
-    def __call__(self, img):
+    def forward(self, img):
         rgbs = []
         for img_i in img:
             pose = torch.eye(4).to(img.device)         # use dummy pose to infer pixel values
@@ -36,7 +36,7 @@ class RaySampler(nn.Module):
         self.return_indices = True
         self.orthographic = orthographic
 
-    def __call__(self, H, W, focal, pose):
+    def forward(self, H, W, focal, pose):
         if self.orthographic:
             size_h, size_w = focal      # Hacky
             rays_o, rays_d = get_rays_ortho(H, W, pose, size_h, size_w)

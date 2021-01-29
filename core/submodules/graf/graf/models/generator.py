@@ -46,7 +46,7 @@ class Generator(nn.Module):
         self.use_test_kwargs = False
         self.render = partial(render, H=self.H, W=self.W, focal=self.focal, chunk=self.chunk)
 
-    def __call__(self, z, y=None, rays=None):
+    def forward(self, z, y=None, rays=None):
         bs = z.shape[0]
         if rays is None:
             rays = torch.cat([self.sample_rays() for _ in range(bs)], dim=1).to(z.device)
