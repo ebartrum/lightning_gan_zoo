@@ -8,7 +8,11 @@ optimisation:
   lr: 2e-4
   beta1: 0.5
   beta2: 0.999
-optimiser:
+disc_optimiser:
+  _target_: torch.optim.Adam
+  lr: "${optimisation.lr}"
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+gen_optimiser:
   _target_: torch.optim.Adam
   lr: "${optimisation.lr}"
   betas: ["${optimisation.beta1}", "${optimisation.beta2}"]

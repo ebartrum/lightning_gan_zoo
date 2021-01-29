@@ -22,7 +22,11 @@ optimisation:
   beta2: 0.9
 loss_weight:
   lambda_gp: 10
-optimiser:
+disc_optimiser:
+  _target_: torch.optim.Adam
+  lr: "${optimisation.lr}"
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+gen_optimiser:
   _target_: torch.optim.Adam
   lr: "${optimisation.lr}"
   betas: ["${optimisation.beta1}", "${optimisation.beta2}"]

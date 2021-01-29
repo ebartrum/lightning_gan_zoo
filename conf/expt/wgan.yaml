@@ -20,7 +20,10 @@ optimisation:
   lr: 5e-5
   disc_freq: 5
   gen_freq: 1
-optimiser:
+disc_optimiser:
+  _target_: torch.optim.RMSprop
+  lr: "${optimisation.lr}"
+gen_optimiser:
   _target_: torch.optim.RMSprop
   lr: "${optimisation.lr}"
 

@@ -12,13 +12,17 @@ train:
   take_model_average: False
   # take_model_average: True
 optimisation:
-  lr: 1e-4
+  disc_lr: 1e-4
+  gen_lr: 5e-4
   disc_freq: 1
   lr_anneal: 1.
   anneal_every: 150000
-optimiser:
+disc_optimiser:
   _target_: torch.optim.RMSprop
-  lr: "${optimisation.lr}"
+  lr: "${optimisation.disc_lr}"
+gen_optimiser:
+  _target_: torch.optim.RMSprop
+  lr: "${optimisation.gen_lr}"
 loss_weight:
   reg: 10
 generator:

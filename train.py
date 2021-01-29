@@ -64,9 +64,9 @@ class GAN(pl.LightningModule):
         self.log('fid', 1./(1+self.current_epoch))
 
     def configure_optimizers(self):
-        opt_disc = instantiate(self.cfg.optimiser,
+        opt_disc = instantiate(self.cfg.disc_optimiser,
                     self.discriminator.parameters())
-        opt_gen = instantiate(self.cfg.optimiser,
+        opt_gen = instantiate(self.cfg.gen_optimiser,
                     self.generator.parameters())
         scheduler_disc = optim.lr_scheduler.StepLR(opt_disc,
                 step_size=self.cfg.optimisation.anneal_every,
