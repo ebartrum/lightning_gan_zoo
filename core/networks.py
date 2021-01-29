@@ -80,4 +80,5 @@ class Generator(nn.Module):
             ]))
 
     def forward(self, x):
+        x = x.unsqueeze(-1).unsqueeze(-1)
         return self.net(x)

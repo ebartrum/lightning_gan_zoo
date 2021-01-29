@@ -4,7 +4,7 @@ from core.utils import gradient_penalty, compute_grad2
 def dc(lm, batch, batch_idx, optimizer_idx):
     real, _ = batch
     noise = torch.randn(len(real),
-            lm.cfg.train.noise_dim, 1, 1).to(lm.device)
+            lm.cfg.train.noise_dim).to(lm.device)
     fake = lm.generator(noise)
 
     # train discriminator
@@ -29,7 +29,7 @@ def dc(lm, batch, batch_idx, optimizer_idx):
 def gan_stability_r1(lm, batch, batch_idx, optimizer_idx):
     real, _ = batch
     noise = torch.randn(len(real),
-            lm.cfg.train.noise_dim, 1, 1).to(lm.device)
+            lm.cfg.train.noise_dim).to(lm.device)
     fake = lm.generator(noise)
 
     # train discriminator
@@ -59,7 +59,7 @@ def wgan(lm, batch, batch_idx, optimizer_idx):
 
     real, _ = batch
     noise = torch.randn(len(real),
-            lm.cfg.train.noise_dim, 1, 1).to(lm.device)
+            lm.cfg.train.noise_dim).to(lm.device)
     fake = lm.generator(noise)
 
     # train discriminator
@@ -80,7 +80,7 @@ def wgan(lm, batch, batch_idx, optimizer_idx):
 def wgan_gp(lm, batch, batch_idx, optimizer_idx):
     real, _ = batch
     noise = torch.randn(len(real),
-            lm.cfg.train.noise_dim, 1, 1).to(lm.device)
+            lm.cfg.train.noise_dim).to(lm.device)
     fake = lm.generator(noise)
 
     # train discriminator
