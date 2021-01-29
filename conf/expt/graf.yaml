@@ -1,10 +1,14 @@
 # @package _global_
 name: graf
 train:
-  batch_size: 8
-  img_size: 128
-  noise_dim: 256
-  noise_appearance_dim: 128         # This dimension is subtracted from "dim"
+  # batch_size: 8
+  batch_size: 4
+  # img_size: 128
+  img_size: 32
+  # noise_dim: 256
+  noise_dim: 32
+  # noise_appearance_dim: 128         # This dimension is subtracted from "dim"
+  noise_appearance_dim: 16         # This dimension is subtracted from "dim"
   chunk: 32768                # 1024*32
   netchunk: 65536             # 1024*64
   training_step:
@@ -29,7 +33,8 @@ generator:
 discriminator:
   _target_: core.submodules.graf.graf.models.discriminator.Discriminator
   nc: 3
-  ndf: 64
+  # ndf: 64
+  ndf: 16
   hflip: False                # Randomly flip discriminator input horizontally
   n_ray_samples: "${ray_sampler.N_samples}"
 nerf:
@@ -37,12 +42,15 @@ nerf:
   use_viewdirs: True
   multires: 10
   multires_views: 4
-  N_samples: 64
+  # N_samples: 64
+  N_samples: 16
   N_importance: 0
   netdepth: 8
-  netwidth: 256
+  # netwidth: 256
+  netwidth: 32
   netdepth_fine: 8
-  netwidth_fine: 256
+  netwidth_fine: 32
+  # netwidth_fine: 256
   perturb: 1.
   raw_noise_std: 1.
   decrease_noise: True
