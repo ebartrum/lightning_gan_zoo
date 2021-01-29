@@ -16,7 +16,7 @@ optimisation:
   gen_lr: 5e-4
   disc_freq: 1
   lr_anneal: 1.
-  anneal_every: 150000
+  lr_anneal_every: 50000,100000,200000
 disc_optimiser:
   _target_: torch.optim.RMSprop
   lr: "${optimisation.disc_lr}"
