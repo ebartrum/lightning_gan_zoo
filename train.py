@@ -26,8 +26,9 @@ class GAN(pl.LightningModule):
         super().__init__()
         self.discriminator = instantiate(cfg.discriminator)
         self.generator = instantiate(cfg.generator)
-        self.img_to_patch = ImgToPatch(self.generator.ray_sampler,
-                (self.generator.H, self.generator.W, self.generator.focal))
+        if hasattr(self.generator, 'ray_sampler'):
+            self.img_to_patch = ImgToPatch(self.generator.ray_sampler,
+                    (self.generator.H, self.generator.W, self.generator.focal))
         self.cfg=cfg
         self.hparams=cfg
         self.logging_dir=logging_dir
