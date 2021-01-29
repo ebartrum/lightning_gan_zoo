@@ -49,11 +49,11 @@ class GAN(pl.LightningModule):
         return call(self.cfg.train.training_step, self, batch, batch_idx, optimizer_idx)
 
     def validation_step(self, batch, batch_idx):
-        real, _ = batch
-        rgbs = self.img_to_patch(real)  
-        noise = self.fixed_noise.to(self.device).squeeze(-1).squeeze(-1)
-        y = torch.zeros(len(real)).to(real.device)
-        fake = self.generator(noise,y)
+        # real, _ = batch
+        # rgbs = self.img_to_patch(real)  
+        # noise = self.fixed_noise.to(self.device).squeeze(-1).squeeze(-1)
+        # y = torch.zeros(len(real)).to(real.device)
+        # fake = self.generator(noise,y)
         
         # img_grid_real = torchvision.utils.make_grid(real, normalize=True)
         # img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)
