@@ -13,10 +13,8 @@ class ImgToPatch(nn.Module):
     def __call__(self, img):
         rgbs = []
         for img_i in img:
-            pose = torch.eye(4)         # use dummy pose to infer pixel values
+            pose = torch.eye(4).to(img.device)         # use dummy pose to infer pixel values
             _, selected_idcs, pixels_i = self.ray_sampler(H=self.hwf[0], W=self.hwf[1], focal=self.hwf[2], pose=pose)
-            print(pixels_i.device)
-            import ipdb;ipdb.set_trace()
             if selected_idcs is not None:
                 rgbs_i = img_i.flatten(1, 2).t()[selected_idcs]
             else:
@@ -45,7 +43,7 @@ class RaySampler(nn.Module):
         else:
             rays_o, rays_d = get_rays(H, W, focal, pose)
 
-        select_inds = self.sample_rays(H, W)
+        select_inds = self.sample_rays(H, W).to(pose.device)
 
         if self.return_indices:
             rays_o = rays_o.view(-1, 3)[select_inds]

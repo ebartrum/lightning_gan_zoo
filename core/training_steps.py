@@ -100,10 +100,10 @@ def wgan_gp(lm, batch, batch_idx, optimizer_idx):
         return loss_gen
 
 def graf(lm, batch, batch_idx, optimizer_idx):
-    import ipdb;ipdb.set_trace()
     lm.generator.ray_sampler.iterations +=1   # for scale annealing
     real, _ = batch
     rgbs = img_to_patch(real.to(device))          # N_samples x C
+    import ipdb;ipdb.set_trace()
 
     # train discriminator
     if optimizer_idx == 0:

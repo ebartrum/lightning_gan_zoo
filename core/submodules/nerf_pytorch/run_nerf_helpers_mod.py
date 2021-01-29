@@ -156,7 +156,8 @@ class NeRF(nn.Module):
 
 # Ray helpers
 def get_rays(H, W, focal, c2w):
-    i, j = torch.meshgrid(torch.linspace(0, W-1, W), torch.linspace(0, H-1, H))  # pytorch's meshgrid has indexing='ij'
+    i, j = torch.meshgrid(torch.linspace(0, W-1, W, device=c2w.device),
+            torch.linspace(0, H-1, H, device=c2w.device))  # pytorch's meshgrid has indexing='ij'
     i = i.t()
     j = j.t()
     dirs = torch.stack([(i-W*.5)/focal, -(j-H*.5)/focal, -torch.ones_like(i)], -1)

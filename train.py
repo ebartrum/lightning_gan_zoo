@@ -19,12 +19,15 @@ from core.submodules.gan_stability.metrics import FIDEvaluator
 import numpy as np
 from glob import glob
 import submitit
+from core.submodules.graf.graf.transforms import ImgToPatch
 
 class GAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
         super().__init__()
         self.discriminator = instantiate(cfg.discriminator)
         self.generator = instantiate(cfg.generator)
+        self.img_to_patch = ImgToPatch(self.generator.ray_sampler,
+                (self.generator.H, self.generator.W, self.generator.focal))
         self.cfg=cfg
         self.hparams=cfg
         self.logging_dir=logging_dir
@@ -45,8 +48,9 @@ class GAN(pl.LightningModule):
         return call(self.cfg.train.training_step, self, batch, batch_idx, optimizer_idx)
 
     def validation_step(self, batch, batch_idx):
-        import ipdb;ipdb.set_trace()
         real, _ = batch
+        rgbs = self.img_to_patch(real)  
+        import ipdb;ipdb.set_trace()
         noise = self.fixed_noise.to(self.device)
         fake = self.generator(noise)
         
