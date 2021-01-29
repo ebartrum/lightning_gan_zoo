@@ -235,24 +235,24 @@ def raw2outputs(raw, z_vals, rays_d, raw_noise_std=0, white_bkgd=False, pytest=F
     raw2alpha = lambda raw, dists, act_fn=relu: 1.-torch.exp(-act_fn(raw)*dists)
 
     dists = z_vals[...,1:] - z_vals[...,:-1]
-    dists = torch.cat([dists, torch.Tensor([1e10]).expand(dists[...,:1].shape)], -1)  # [N_rays, N_samples]
+    dists = torch.cat([dists, torch.Tensor([1e10]).to(z_vals.device).expand(dists[...,:1].shape)], -1)  # [N_rays, N_samples]
 
     dists = dists * torch.norm(rays_d[...,None,:], dim=-1)
 
     rgb = torch.sigmoid(raw[...,:3])  # [N_rays, N_samples, 3]
     noise = 0.
     if raw_noise_std > 0.:
-        noise = torch.randn(raw[...,3].shape) * raw_noise_std
+        noise = torch.randn(raw[...,3].shape, device=z_vals.device) * raw_noise_std
 
         # Overwrite randomly sampled data if pytest
         if pytest:
             np.random.seed(0)
             noise = np.random.rand(*list(raw[...,3].shape)) * raw_noise_std
-            noise = torch.Tensor(noise)
+            noise = torch.Tensor(noise).to(z_vals.device)
 
     alpha = raw2alpha(raw[...,3] + noise, dists)  # [N_rays, N_samples]
     # weights = alpha * tf.math.cumprod(1.-alpha + 1e-10, -1, exclusive=True)
-    weights = alpha * torch.cumprod(torch.cat([torch.ones((alpha.shape[0], 1)), 1.-alpha + 1e-10], -1), -1)[:, :-1]
+    weights = alpha * torch.cumprod(torch.cat([torch.ones((alpha.shape[0], 1), device=z_vals.device), 1.-alpha + 1e-10], -1), -1)[:, :-1]
     rgb_map = torch.sum(weights[...,None] * rgb, -2)  # [N_rays, 3]
 
     depth_map = torch.sum(weights * z_vals, -1)
