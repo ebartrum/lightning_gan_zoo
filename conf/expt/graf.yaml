@@ -73,6 +73,5 @@ ray_sampler:
   scale_anneal: 0.0025        # no effect if scale_anneal<0, else the minimum scale decreases exponentially until converge to min_scale
   N_samples: 1024             # 32*32, patchsize
 defaults:
-  - /figures@figures.sample_grid: sample_grid
-  - /figures@figures.interpolation: interpolation
+  - /figures@figures.graf_sample_grid: graf_sample_grid
   - override /dataset: mnist

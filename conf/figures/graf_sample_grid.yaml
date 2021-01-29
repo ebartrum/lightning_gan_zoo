@@ -1,0 +1,4 @@
+_target_: core.figures.types.GrafSampleGrid
+cfg:
+  noise_dim: "${train.noise_dim}"
+  batch_size: "${train.batch_size}"
