@@ -53,14 +53,14 @@ class GAN(pl.LightningModule):
         noise = self.fixed_noise.to(self.device).squeeze(-1).squeeze(-1)
         y = torch.zeros(len(real)).to(real.device)
         fake = self.generator(noise,y)
-        import ipdb;ipdb.set_trace()
         
-        img_grid_real = torchvision.utils.make_grid(real, normalize=True)
-        img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)
-        self.logger.experiment.add_image('Real',
-                img_grid_real, self.current_epoch)
-        self.logger.experiment.add_image('Fake',
-                img_grid_fake, self.current_epoch)
+        # img_grid_real = torchvision.utils.make_grid(real, normalize=True)
+        # img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)
+        # self.logger.experiment.add_image('Real',
+        #         img_grid_real, self.current_epoch)
+        # self.logger.experiment.add_image('Fake',
+        #         img_grid_fake, self.current_epoch)
+        self.log('fid', 1)
 
     def configure_optimizers(self):
         opt_disc = instantiate(self.cfg.optimiser,

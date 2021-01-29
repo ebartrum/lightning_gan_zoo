@@ -13,6 +13,8 @@ train:
   netchunk: 65536             # 1024*64
   training_step:
     _target_: core.training_steps.graf
+  take_model_average: False
+  # take_model_average: True
 optimisation:
   lr: 1e-4
   disc_freq: 1

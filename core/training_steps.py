@@ -102,19 +102,19 @@ def wgan_gp(lm, batch, batch_idx, optimizer_idx):
 def graf(lm, batch, batch_idx, optimizer_idx):
     lm.generator.ray_sampler.iterations +=1   # for scale annealing
     real, _ = batch
-    rgbs = img_to_patch(real.to(device))          # N_samples x C
-    import ipdb;ipdb.set_trace()
+    rgbs = lm.img_to_patch(real)          # N_samples x C
+    z = torch.randn(len(real),
+            lm.cfg.train.noise_dim).to(lm.device)
+    y = torch.zeros(len(real)).to(real.device)
+    fake = lm.generator(z,y)
 
     # train discriminator
     if optimizer_idx == 0:
-        import ipdb;ipdb.set_trace()
-        z = zdist.sample((batch_size,))
-        fake = lm.generator(z)
         real.requires_grad_()
-        disc_real = lm.discriminator(real).reshape(-1)
+        disc_real = lm.discriminator(real, y)
         loss_disc_real = lm.criterion(disc_real,
                 torch.ones_like(disc_real))
-        disc_fake = lm.discriminator(fake.detach()).reshape(-1)
+        disc_fake = lm.discriminator(fake.detach(), y)
         loss_disc_fake = lm.criterion(disc_fake,
                 torch.zeros_like(disc_fake))
         r1_reg = lm.cfg.loss_weight.reg * compute_grad2(disc_real, real).mean()
@@ -125,19 +125,17 @@ def graf(lm, batch, batch_idx, optimizer_idx):
 
     # train generator
     if optimizer_idx == 1:
-        import ipdb;ipdb.set_trace()
         # Generators updates
         if lm.cfg.nerf.decrease_noise:
+          it = lm.generator.ray_sampler.iterations
           lm.generator.decrease_nerf_noise(it)
 
-        z = zdist.sample((batch_size,))
-        fake = lm.generator(z)
-        output = lm.discriminator(fake).reshape(-1)
-        loss_gen = lm.criterion(output, torch.ones_like(output))
+        disc_fake = lm.discriminator(fake, y)
+        loss_gen = lm.criterion(disc_fake, torch.ones_like(disc_fake))
         lm.log('train/loss_gen', loss_gen)
 
         #TODO: implement this
-        if cfg.training.take_model_average:
+        if lm.cfg.train.take_model_average:
             raise NotImplementedError
             update_average(generator_test, generator,
                            beta=config['training']['model_average_beta'])

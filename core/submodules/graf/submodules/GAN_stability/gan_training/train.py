@@ -20,6 +20,7 @@ class Trainer(object):
 
     def generator_trainstep(self, y, z):
         assert(y.size(0) == z.size(0))
+        import ipdb;ipdb.set_trace()
         toggle_grad(self.generator, True)
         toggle_grad(self.discriminator, False)
         self.generator.train()
