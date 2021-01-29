@@ -60,7 +60,7 @@ class GAN(pl.LightningModule):
         #         img_grid_real, self.current_epoch)
         # self.logger.experiment.add_image('Fake',
         #         img_grid_fake, self.current_epoch)
-        self.log('fid', 1)
+        self.log('fid', 1./(1+self.current_epoch))
 
     def configure_optimizers(self):
         opt_disc = instantiate(self.cfg.optimiser,
