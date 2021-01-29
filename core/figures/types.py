@@ -42,16 +42,24 @@ class Figure(Callback):
         fig_array = self.draw(pl_module)
         self.save(fig_array)
 
-    def on_validation_end(self, trainer, pl_module):
-        current_metrics = deepcopy(
-                trainer.logger_connector.logged_metrics)
-        current_monitor = current_metrics[self.monitor]
-        if current_monitor < self.current_best_metric:
-            self.current_best_metric = current_monitor
+    @torch.no_grad()
+    def on_batch_start(self, trainer, pl_module):
+        if pl_module.global_step % 200 == 0: 
+            pl_module.eval()
             print(f"Drawing & saving {self.filename}...")
             self.draw_and_save(pl_module)
-        else:
-            print(f"Current metric {current_monitor} is worse than current best {self.current_best_metric}. Skipping figures")
+            pl_module.train()
+
+    # def on_validation_end(self, trainer, pl_module):
+    #     current_metrics = deepcopy(
+    #             trainer.logger_connector.logged_metrics)
+    #     current_monitor = current_metrics[self.monitor]
+    #     if current_monitor < self.current_best_metric:
+    #         self.current_best_metric = current_monitor
+    #         print(f"Drawing & saving {self.filename}...")
+    #         self.draw_and_save(pl_module)
+    #     else:
+    #         print(f"Current metric {current_monitor} is worse than current best {self.current_best_metric}. Skipping figures")
 
 class AnimationFigure(Figure):
     def __init__(self, cfg, parent_dir, monitor):
