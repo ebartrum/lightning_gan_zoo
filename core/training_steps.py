@@ -100,7 +100,7 @@ def wgan_gp(lm, batch, batch_idx, optimizer_idx):
         return loss_gen
 
 def graf(lm, batch, batch_idx, optimizer_idx):
-    lm.generator.ray_sampler.iterations +=1   # for scale annealing
+    lm.generator.ray_sampler.iterations = lm.global_step   # for scale annealing
     real, _ = batch
     rgbs = lm.img_to_patch(real)          # N_samples x C
     z = torch.randn(len(real),
@@ -127,8 +127,7 @@ def graf(lm, batch, batch_idx, optimizer_idx):
     if optimizer_idx == 1:
         # Generators updates
         if lm.cfg.nerf.decrease_noise:
-          it = lm.generator.ray_sampler.iterations
-          lm.generator.decrease_nerf_noise(it)
+          lm.generator.decrease_nerf_noise(lm.global_step)
 
         disc_fake = lm.discriminator(fake, y)
         loss_gen = lm.criterion(disc_fake, torch.ones_like(disc_fake))
