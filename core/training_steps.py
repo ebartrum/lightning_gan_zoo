@@ -105,16 +105,15 @@ def graf(lm, batch, batch_idx, optimizer_idx):
     rgbs = lm.img_to_patch(real)          # N_samples x C
     z = torch.randn(len(real),
             lm.cfg.train.noise_dim).to(lm.device)
-    y = torch.zeros(len(real)).to(real.device)
-    fake = lm.generator(z,y)
+    fake = lm.generator(z)
 
     # train discriminator
     if optimizer_idx == 0:
         real.requires_grad_()
-        disc_real = lm.discriminator(real, y)
+        disc_real = lm.discriminator(real)
         loss_disc_real = lm.criterion(disc_real,
                 torch.ones_like(disc_real))
-        disc_fake = lm.discriminator(fake.detach(), y)
+        disc_fake = lm.discriminator(fake.detach())
         loss_disc_fake = lm.criterion(disc_fake,
                 torch.zeros_like(disc_fake))
         r1_reg = lm.cfg.loss_weight.reg * compute_grad2(disc_real, real).mean()
@@ -129,7 +128,7 @@ def graf(lm, batch, batch_idx, optimizer_idx):
         if lm.cfg.nerf.decrease_noise:
           lm.generator.decrease_nerf_noise(lm.global_step)
 
-        disc_fake = lm.discriminator(fake, y)
+        disc_fake = lm.discriminator(fake)
         loss_gen = lm.criterion(disc_fake, torch.ones_like(disc_fake))
         lm.log('train/loss_gen', loss_gen)
 
