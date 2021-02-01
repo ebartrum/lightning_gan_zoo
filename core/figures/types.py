@@ -175,7 +175,9 @@ class GrafSampleGrid(Grid):
         if self.ptest is None:
             self.ptest = torch.stack([pl_module.generator.sample_pose() for i in range(self.ntest)])
             
-        rgb, depth, acc = self.create_samples(pl_module.generator,
+        # rgb, depth, acc = self.create_samples(pl_module.generator,
+        #         self.ztest.to(pl_module.device), poses=self.ptest)
+        rgb = self.create_samples(pl_module.generator,
                 self.ztest.to(pl_module.device), poses=self.ptest)
         rgb = (rgb + 1)/2
         rows = rgb[:4], rgb[4:8], rgb[8:12], rgb[12:16]
@@ -203,22 +205,24 @@ class GrafSampleGrid(Grid):
                 if rays_i is not None:
                     rays_i = rays_i.permute(1, 0, 2, 3).flatten(1, 2)       # Bx2x(HxW)xC -> 2x(BxHxW)x3
 
-                generator.use_test_kwargs = True #TODO: remove this hack.
-                rgb_i, disp_i, acc_i, _ = generator(z_i, rays=rays_i)
-                generator.use_test_kwargs = False
+                # generator.use_test_kwargs = True #TODO: remove this hack.
+                # rgb_i, disp_i, acc_i, _ = generator(z_i, rays=rays_i)
+                rgb_i = generator(z_i, rays=rays_i)
+                # generator.use_test_kwargs = False
 
                 reshape = lambda x: x.view(bs, generator.H, generator.W, x.shape[1]).permute(0, 3, 1, 2)  # (NxHxW)xC -> NxCxHxW
                 rgb.append(reshape(rgb_i).cpu())
-                disp.append(reshape(disp_i).cpu())
-                acc.append(reshape(acc_i).cpu())
+                # disp.append(reshape(disp_i).cpu())
+                # acc.append(reshape(acc_i).cpu())
 
         rgb = torch.cat(rgb)
-        disp = torch.cat(disp)
-        acc = torch.cat(acc)
+        # disp = torch.cat(disp)
+        # acc = torch.cat(acc)
 
-        depth = self.disp_to_cdepth(generator, disp)
+        # depth = self.disp_to_cdepth(generator, disp)
 
-        return rgb, depth, acc
+        # return rgb, depth, acc
+        return rgb
 
     @torch.no_grad()
     def get_rays(self, generator, pose):
