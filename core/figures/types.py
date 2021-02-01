@@ -104,7 +104,6 @@ class Grid(Figure):
             list(self.create_rows(pl_module)),dim=0),
             nrow=self.ncol)
         grid = grid.permute(1,2,0)
-        grid = torch.clamp(grid, 0, 1)
         fig_array = grid.detach().cpu().numpy()
         return fig_array
 
