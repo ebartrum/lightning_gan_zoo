@@ -40,8 +40,8 @@ class GAN(pl.LightningModule):
                 [0.5 for _ in range(cfg.train.channels_img)])])
         self.criterion = nn.BCELoss()
         self.fixed_noise = torch.randn(32, cfg.train.noise_dim)
-        self.discriminator.apply(init_weights) #TODO: put init_weights back in
-        self.generator.apply(init_weights)
+        #self.discriminator.apply(init_weights) #TODO: put init_weights back in
+        #self.generator.apply(init_weights)
         if cfg.debug.verbose_shape:
             self.apply(VerboseShapeExecution)
 
