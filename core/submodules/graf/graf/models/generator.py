@@ -117,7 +117,7 @@ class Generator(nn.Module):
         if self.render_kwargs_train['network_fine'] is not None:
             self.render_kwargs_train['network_fine'].to(device)
         self.device = device
-        return self
+        return super().to(device)
 
     def train(self, mode=True):
         if mode:
@@ -134,7 +134,3 @@ class Generator(nn.Module):
 
     def eval(self):
         return self.train(mode=False)
-#         self.use_test_kwargs = True
-#         self.render_kwargs_train['network_fn'].eval()
-#         if self.render_kwargs_train['network_fine'] is not None:
-#             self.render_kwargs_train['network_fine'].eval()

@@ -202,10 +202,7 @@ class GrafSampleGrid(Grid):
                 bs = len(z_i)
                 if rays_i is not None:
                     rays_i = rays_i.permute(1, 0, 2, 3).flatten(1, 2)       # Bx2x(HxW)xC -> 2x(BxHxW)x3
-
-                # generator.use_test_kwargs = True #TODO: remove this hack.
                 rgb_i, disp_i, acc_i, _ = generator(z_i, rays=rays_i)
-                # generator.use_test_kwargs = False
 
                 reshape = lambda x: x.view(bs, generator.H, generator.W, x.shape[1]).permute(0, 3, 1, 2)  # (NxHxW)xC -> NxCxHxW
                 rgb.append(reshape(rgb_i).cpu())
