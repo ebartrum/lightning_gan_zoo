@@ -3,9 +3,9 @@ import numpy as np
 import os
 from tqdm import tqdm
 
-from submodules.GAN_stability.gan_training.train import toggle_grad, Trainer as TrainerBase
-from submodules.GAN_stability.gan_training.eval import Evaluator as EvaluatorBase
-from submodules.GAN_stability.gan_training.metrics import FIDEvaluator, KIDEvaluator
+from core.submodules.graf.submodules.gan_stability.gan_training.train import toggle_grad, Trainer as TrainerBase
+from core.submodules.graf.submodules.gan_stability.gan_training.eval import Evaluator as EvaluatorBase
+from core.submodules.graf.submodules.gan_stability.gan_training.metrics import FIDEvaluator, KIDEvaluator
 
 from .utils import save_video, color_depth_map
 

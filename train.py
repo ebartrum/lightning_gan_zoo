@@ -20,6 +20,8 @@ import numpy as np
 from glob import glob
 import submitit
 from core.submodules.graf.graf.transforms import ImgToPatch
+from core.submodules.graf.graf.gan_training import Trainer, Evaluator
+from core.submodules.graf.submodules.gan_stability.gan_training.distributions import get_ydist
 
 class GAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
@@ -44,6 +46,17 @@ class GAN(pl.LightningModule):
         #self.generator.apply(init_weights)
         if cfg.debug.verbose_shape:
             self.apply(VerboseShapeExecution)
+
+        device = torch.device("cuda:0")
+        mu = torch.zeros(cfg.train.noise_dim, device=device)
+        scale = torch.ones(cfg.train.noise_dim, device=device)
+        zdist = torch.distributions.Normal(mu, scale)
+        ydist = get_ydist(1, device=device)
+        self.evaluator = Evaluator(False, self.generator,
+                              zdist, ydist,
+                              batch_size=cfg.train.batch_size,
+                              device=device,
+                              inception_nsamples=33)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         return call(self.cfg.train.training_step, self, batch, batch_idx, optimizer_idx)

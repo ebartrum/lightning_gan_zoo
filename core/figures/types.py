@@ -174,71 +174,74 @@ class GrafSampleGrid(Grid):
     def create_rows(self, pl_module):
         if self.ptest is None:
             self.ptest = torch.stack([pl_module.generator.sample_pose() for i in range(self.ntest)])
-            
-        rgb, depth, acc = self.create_samples(pl_module.generator,
+
+        rgb, depth, acc = pl_module.evaluator.create_samples(
                 self.ztest.to(pl_module.device), poses=self.ptest)
+            
+        # rgb, depth, acc = self.create_samples(pl_module.generator,
+        #         self.ztest.to(pl_module.device), poses=self.ptest)
         rgb = (rgb + 1)/2
         rows = rgb[:4], rgb[4:8], rgb[8:12], rgb[12:16]
         return rows
 
-    @torch.no_grad()
-    def create_samples(self, generator, z, poses=None):
-        generator.eval()
+    # @torch.no_grad()
+    # def create_samples(self, generator, z, poses=None):
+    #     generator.eval()
 
-        N_samples = len(z)
-        device = generator.device
+    #     N_samples = len(z)
+    #     device = generator.device
 
-        z = z.to(device).split(self.batch_size)
-        if poses is None:
-            rays = [None] * len(z)
-        else:
-            rays = torch.stack([self.get_rays(generator, poses[i].to(device))
-                for i in range(N_samples)])
-            rays = rays.split(self.batch_size)
+    #     z = z.to(device).split(self.batch_size)
+    #     if poses is None:
+    #         rays = [None] * len(z)
+    #     else:
+    #         rays = torch.stack([self.get_rays(generator, poses[i].to(device))
+    #             for i in range(N_samples)])
+    #         rays = rays.split(self.batch_size)
 
-        rgb, disp, acc = [], [], []
-        with torch.no_grad():
-            for z_i, rays_i in tqdm(zip(z, rays), total=len(z), desc='Create samples...'):
-                bs = len(z_i)
-                if rays_i is not None:
-                    rays_i = rays_i.permute(1, 0, 2, 3).flatten(1, 2)       # Bx2x(HxW)xC -> 2x(BxHxW)x3
-                rgb_i, disp_i, acc_i, _ = generator(z_i, rays=rays_i)
+    #     rgb, disp, acc = [], [], []
+    #     with torch.no_grad():
+    #         for z_i, rays_i in tqdm(zip(z, rays), total=len(z), desc='Create samples...'):
+    #             bs = len(z_i)
+    #             if rays_i is not None:
+    #                 rays_i = rays_i.permute(1, 0, 2, 3).flatten(1, 2)       # Bx2x(HxW)xC -> 2x(BxHxW)x3
+    #             rgb_i, disp_i, acc_i, _ = generator(z_i, rays=rays_i)
 
-                reshape = lambda x: x.view(bs, generator.H, generator.W, x.shape[1]).permute(0, 3, 1, 2)  # (NxHxW)xC -> NxCxHxW
-                rgb.append(reshape(rgb_i).cpu())
-                disp.append(reshape(disp_i).cpu())
-                acc.append(reshape(acc_i).cpu())
+    #             reshape = lambda x: x.view(bs, generator.H, generator.W, x.shape[1]).permute(0, 3, 1, 2)  # (NxHxW)xC -> NxCxHxW
+    #             rgb.append(reshape(rgb_i).cpu())
+    #             disp.append(reshape(disp_i).cpu())
+    #             acc.append(reshape(acc_i).cpu())
 
-        rgb = torch.cat(rgb)
-        disp = torch.cat(disp)
-        acc = torch.cat(acc)
+    #     rgb = torch.cat(rgb)
+    #     disp = torch.cat(disp)
+    #     acc = torch.cat(acc)
 
-        depth = self.disp_to_cdepth(generator, disp)
+    #     depth = self.disp_to_cdepth(generator, disp)
 
-        return rgb, depth, acc
+    #     return rgb, depth, acc
 
-    @torch.no_grad()
-    def get_rays(self, generator, pose):
-        return generator.val_ray_sampler(generator.H, generator.W,
-                                              generator.focal, pose)[0]
+    # @torch.no_grad()
+    # def get_rays(self, generator, pose):
+    #     return generator.val_ray_sampler(generator.H, generator.W,
+    #                                           generator.focal, pose)[0]
 
-    @torch.no_grad()
-    def disp_to_cdepth(self, generator, disps):
-        """Convert depth to color values"""
-        if (disps == 2e10).all():           # no values predicted
-            return torch.ones_like(disps)
+    # @torch.no_grad()
+    # def disp_to_cdepth(self, generator, disps):
+    #     """Convert depth to color values"""
+    #     if (disps == 2e10).all():           # no values predicted
+    #         return torch.ones_like(disps)
 
-        near, far = generator.render_kwargs_test['near'], generator.render_kwargs_test['far']
+    #     near, far = generator.render_kwargs_test['near'], generator.render_kwargs_test['far']
 
-        disps = disps / 2 + 0.5  # [-1, 1] -> [0, 1]
+    #     disps = disps / 2 + 0.5  # [-1, 1] -> [0, 1]
 
-        depth = 1. / torch.max(1e-10 * torch.ones_like(disps), disps)  # disparity -> depth
-        depth[disps == 1e10] = far  # set undefined values to far plane
+    #     depth = 1. / torch.max(1e-10 * torch.ones_like(disps), disps)  # disparity -> depth
+    #     depth[disps == 1e10] = far  # set undefined values to far plane
 
-        # scale between near, far plane for better visualization
-        depth = (depth - near) / (far - near)
+    #     # scale between near, far plane for better visualization
+    #     depth = (depth - near) / (far - near)
 
-        depth = np.stack([color_depth_map(d) for d in depth[:, 0].detach().cpu().numpy()])  # convert to color
-        depth = (torch.from_numpy(depth).permute(0, 3, 1, 2) / 255.) * 2 - 1  # [0, 255] -> [-1, 1]
+    #     depth = np.stack([color_depth_map(d) for d in depth[:, 0].detach().cpu().numpy()])  # convert to color
+    #     depth = (torch.from_numpy(depth).permute(0, 3, 1, 2) / 255.) * 2 - 1  # [0, 255] -> [-1, 1]
 
-        return depth
+    #     return depth

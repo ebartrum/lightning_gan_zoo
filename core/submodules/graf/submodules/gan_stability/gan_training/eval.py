@@ -1,5 +1,5 @@
 import torch
-from GAN_stability.gan_training.metrics import inception_score
+from core.submodules.graf.submodules.gan_stability.gan_training.metrics import inception_score
 
 
 class Evaluator(object):
