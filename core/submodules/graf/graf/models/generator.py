@@ -112,20 +112,28 @@ class Generator(nn.Module):
         batch_rays, _, _ = sampler(self.H, self.W, self.focal, pose)
         return batch_rays
 
-    # def to(self, device):
-    #     self.render_kwargs_train['network_fn'].to(device)
-    #     if self.render_kwargs_train['network_fine'] is not None:
-    #         self.render_kwargs_train['network_fine'].to(device)
-    #     self.device = device
-    #     return self
+    def to(self, device):
+        self.render_kwargs_train['network_fn'].to(device)
+        if self.render_kwargs_train['network_fine'] is not None:
+            self.render_kwargs_train['network_fine'].to(device)
+        self.device = device
+        return self
 
-#     def train(self):
-#         self.use_test_kwargs = False
-#         self.render_kwargs_train['network_fn'].train()
-#         if self.render_kwargs_train['network_fine'] is not None:
-#             self.render_kwargs_train['network_fine'].train()
+    def train(self, mode=True):
+        if mode:
+            self.use_test_kwargs = False
+            self.render_kwargs_train['network_fn'].train()
+            if self.render_kwargs_train['network_fine'] is not None:
+                self.render_kwargs_train['network_fine'].train()
+        elif not mode:
+            self.use_test_kwargs = True
+            self.render_kwargs_train['network_fn'].eval()
+            if self.render_kwargs_train['network_fine'] is not None:
+                self.render_kwargs_train['network_fine'].eval()
+        return super().train(mode)
 
-#     def eval(self):
+    def eval(self):
+        return self.train(mode=False)
 #         self.use_test_kwargs = True
 #         self.render_kwargs_train['network_fn'].eval()
 #         if self.render_kwargs_train['network_fine'] is not None:
