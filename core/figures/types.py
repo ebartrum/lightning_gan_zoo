@@ -178,6 +178,7 @@ class GrafSampleGrid(Grid):
             
         rgb, depth, acc = self.create_samples(pl_module.generator,
                 self.ztest.to(pl_module.device), poses=self.ptest)
+        rgb = (rgb + 1)/2
         rows = rgb[:4], rgb[4:8], rgb[8:12], rgb[12:16]
         return rows
 
