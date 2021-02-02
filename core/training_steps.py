@@ -100,41 +100,43 @@ def wgan_gp(lm, batch, batch_idx, optimizer_idx):
         return loss_gen
 
 def graf(lm, batch, batch_idx, optimizer_idx):
-    lm.generator.ray_sampler.iterations = lm.global_step   # for scale annealing
-    real, _ = batch
-    rgbs = lm.img_to_patch(real)          # N_samples x C
-    z = torch.randn(len(real),
+    it = lm.global_step
+    x_real, _ = batch
+    y = torch.zeros(len(x_real)).to(lm.device)
+
+    lm.generator.ray_sampler.iterations = it
+
+    # Sample patches for real data
+    rgbs = lm.img_to_patch(x_real.to(lm.device))          # N_samples x C
+
+    # Discriminator updates
+    z = torch.randn(len(x_real),
             lm.cfg.train.noise_dim).to(lm.device)
-    fake = lm.generator(z)
+    dloss, reg = lm.gan_trainer.discriminator_trainstep(rgbs, y=y, z=z)
 
-    # train discriminator
-    if optimizer_idx == 0:
-        real.requires_grad_()
-        disc_real = lm.discriminator(real)
-        loss_disc_real = lm.criterion(disc_real,
-                torch.ones_like(disc_real))
-        disc_fake = lm.discriminator(fake.detach())
-        loss_disc_fake = lm.criterion(disc_fake,
-                torch.zeros_like(disc_fake))
-        r1_reg = lm.cfg.loss_weight.reg * compute_grad2(disc_real, real).mean()
-        loss_disc = loss_disc_real + loss_disc_fake
-        lm.log('train/loss_disc', loss_disc)
-        lm.log('train/r1_reg', r1_reg)
-        return loss_disc + r1_reg
+    # Generators updates
+    if lm.cfg['nerf']['decrease_noise']:
+      lm.generator.decrease_nerf_noise(it)
 
-    # train generator
-    if optimizer_idx == 1:
-        # Generators updates
-        if lm.cfg.nerf.decrease_noise:
-          lm.generator.decrease_nerf_noise(lm.global_step)
+    z = torch.randn(len(x_real),
+            lm.cfg.train.noise_dim).to(lm.device)
+    gloss = lm.gan_trainer.generator_trainstep(y=y, z=z)
 
-        disc_fake = lm.discriminator(fake)
-        loss_gen = lm.criterion(disc_fake, torch.ones_like(disc_fake))
-        lm.log('train/loss_gen', loss_gen)
+    # Update learning rate
+    lm.g_scheduler.step()
+    lm.d_scheduler.step()
 
-        #TODO: implement this
-        if lm.cfg.train.take_model_average:
-            raise NotImplementedError
-            update_average(generator_test, generator,
-                           beta=config['training']['model_average_beta'])
-        return loss_gen
+    # (ii) Sample if necessary
+    # if ((it % config['training']['sample_every']) == 0) or ((it < 500) and (it % 100 == 0)):
+    #     print("Creating samples...")
+    #     rgb, depth, acc = evaluator.create_samples(ztest.to(device), poses=ptest)
+    #     logger.add_imgs(rgb, 'rgb', it)
+    #     logger.add_imgs(depth, 'depth', it)
+    #     logger.add_imgs(acc, 'acc', it)
+    # # (vi) Create video if necessary
+    # if ((it+1) % config['training']['video_every']) == 0:
+    #     N_samples = 4
+    #     zvid = zdist.sample((N_samples,))
+
+    #     basename = os.path.join(out_dir, '{}_{:06d}_'.format(os.path.basename(config['expname']), it))
+    #     evaluator.make_video(basename, zvid, render_poses, as_gif=True)

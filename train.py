@@ -57,6 +57,22 @@ class GAN(pl.LightningModule):
                               batch_size=cfg.train.batch_size,
                               device=device,
                               inception_nsamples=33)
+        self.d_optimizer = instantiate(cfg.disc_optimiser,
+                    self.discriminator.parameters())
+        self.g_optimizer = instantiate(cfg.gen_optimiser,
+                    self.generator.parameters())
+        self.d_scheduler = optim.lr_scheduler.StepLR(self.d_optimizer,
+                step_size=self.cfg.optimisation.anneal_every,
+                gamma=self.cfg.optimisation.lr_anneal)
+        self.g_scheduler = optim.lr_scheduler.StepLR(self.g_optimizer,
+                step_size=self.cfg.optimisation.anneal_every,
+                gamma=self.cfg.optimisation.lr_anneal)
+        self.gan_trainer = Trainer(
+            self.generator, self.discriminator, self.g_optimizer,
+            self.d_optimizer, use_amp=False,
+            gan_type="standard",
+            reg_type="real",
+            reg_param=10.0)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         return call(self.cfg.train.training_step, self, batch, batch_idx, optimizer_idx)
@@ -137,7 +153,7 @@ def train(cfg: DictConfig) -> None:
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
             logger=tb_logger, deterministic=True,
             fast_dev_run=cfg.debug.fast_dev_run, callbacks=callbacks,
-            resume_from_checkpoint=ckpt_path)    
+            resume_from_checkpoint=ckpt_path, automatic_optimization=False)    
     trainer.fit(model) 
 
 if __name__ == "__main__":
