@@ -40,6 +40,7 @@ debug:
 figure_details:
     dir: "figures"
     filename: ""
+    monitor: fid
 hydra:
   output_subdir: null
   run:

@@ -1,0 +1,5 @@
+train:
+  _target_: core.submodules.graf.graf.config.get_dataset
+  config: "${}"
+test: "${dataset.train}"
+val: "${dataset.train}"
