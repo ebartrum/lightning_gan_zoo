@@ -1,0 +1,111 @@
+# @package _global_
+name: graf_devel
+version: "${submission_details.version}"
+lm:
+  _target_: core.submodules.graf.train.GRAF
+train:
+  batch_size: 4
+  noise_dim: 32
+  noise_dim_appearance: 16 
+  chunk: 32768                # 1024*32
+  netchunk: 65536             # 1024*64
+  n_test_samples_with_same_shape_code: 4
+  take_model_average: true
+  model_average_beta: 0.999
+  model_average_reinit: false
+  restart_every: -1
+  save_best: fid
+  fid_every: 5000             # Valid for FID and KID
+  print_every: 10
+  sample_every: 500
+  save_every: 900
+  backup_every: 50000
+  video_every: 10000
+optimisation:
+  lr_g: 0.0005
+  lr_d: 0.0001
+  lr_anneal: 0.5
+  lr_anneal_every: 50000,100000,200000
+  equalize_lr: False
+  gen_freq: 1
+  disc_freq: 1
+disc_optimiser:
+  _target_: torch.optim.RMSprop
+  lr: "${optimisation.lr_d}"
+  alpha: 0.99
+  eps: 1e-8
+gen_optimiser:
+  _target_: torch.optim.RMSprop
+  lr: "${optimisation.lr_g}"
+  alpha: 0.99
+  eps: 1e-8
+scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  step_size: "${optimisation.lr_anneal_every}"
+  gamma: "${optimisation.lr_anneal}"
+  last_epoch: -1
+loss_weight:
+  reg_param: 10.
+data:
+  datadir: /home/ed/datasets/img_align_celeba/train/face
+  type: celebA
+  imsize: 32
+  white_bkgd: False
+  white_alpha_bg: False
+  near: 7.5
+  far: 12.5
+  radius: 9.5,10.5
+  fov: 10.
+  orthographic: False
+  umin: 0
+  umax: 0.25
+  vmin: 0.32898992833716556 # 70 deg
+  vmax: 0.45642212862617093   # 85 deg
+  crop: 0
+nerf:
+  i_embed: 0
+  use_viewdirs: True
+  multires: 10
+  multires_views: 4
+  N_samples: 16
+  N_importance: 0
+  netdepth: 8
+  netwidth: 32
+  netdepth_fine: 32
+  netwidth_fine: 256
+  perturb: 1.
+  raw_noise_std: 1.
+  decrease_noise: True
+ray_sampler:
+  min_scale: 0.25
+  max_scale: 1.
+  scale_anneal: 0.0025        # no effect if scale_anneal<0, else the minimum scale decreases exponentially until converge to min_scale
+  N_samples: 1024             # 32*32, patchsize
+generator:
+  _target_:
+    core.submodules.graf.graf.config.build_generator
+  config:
+    "${}"
+discriminator:
+  _target_:
+    core.submodules.graf.graf.config.build_discriminator
+  config:
+    hflip: False
+    ray_sampler: "${ray_sampler}"
+    ndf: 16
+figure_details:
+    filename:
+    ntest: 8
+    noise_dim: "${train.noise_dim}"
+    data: "${data}"
+    monitor:
+hydra:
+  output_subdir: null
+  run:
+    dir: .
+  job_logging:
+    disable_existing_loggers: false
+defaults:
+ - /figures@figures.graf_sample_grid: graf_sample_grid
+ - /figures@figures.graf_video: graf_video
+ - override /dataset: graf
