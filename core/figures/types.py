@@ -11,6 +11,8 @@ from pytorch_lightning.callbacks import Callback
 from PIL import Image
 from core.utils import interpolate_sphere
 from copy import deepcopy
+from core.submodules.graf.graf.gan_training import Evaluator
+from core.submodules.graf.graf.config import compute_render_poses
 
 class Figure(Callback):
     def __init__(self, cfg, parent_dir, monitor=None):
@@ -152,3 +154,49 @@ class Interpolation(AnimationGrid):
         grid = torch.clamp(grid, 0, 1)
         fig_array = grid.detach().cpu().numpy()
         return fig_array
+
+class GrafSampleGrid(Grid):
+    def __init__(self, cfg, parent_dir, pl_module, ncol=4):
+        super(GrafSampleGrid, self).__init__(cfg, parent_dir, ncol)
+        self.ntest = cfg.ntest
+        self.ztest = torch.randn(self.ntest, cfg.noise_dim)
+        self.ptest = torch.stack([pl_module.generator.sample_pose()\
+                for i in range(self.ntest)])
+        self.evaluator = Evaluator(False,
+                pl_module.generator, noise_dim=cfg.noise_dim,
+                batch_size=cfg.ntest,
+                inception_nsamples=33)
+
+    @torch.no_grad()
+    def create_rows(self, pl_module):
+        rgb, depth, acc = self.evaluator.create_samples(
+                self.ztest, poses=self.ptest)
+        rgb = (rgb + 1)/2
+        rows = rgb[:4], rgb[4:8], rgb[8:12], rgb[12:16]
+        return rows
+
+    def draw_and_save(self, pl_module):
+        fig_array = self.draw(pl_module)
+        self.save(fig_array, filename=f"{self.filename}".replace(".", f"_{pl_module.global_step}."))
+
+class GrafVideo(Figure):
+    def __init__(self, cfg, parent_dir, pl_module):
+        super(GrafVideo, self).__init__(cfg, parent_dir)
+        self.ntest = cfg.ntest
+        self.render_poses = compute_render_poses(cfg)
+        n_samples = 4
+        self.zvid = torch.randn(n_samples, cfg.noise_dim)
+        self.ptest = torch.stack([pl_module.generator.sample_pose()\
+                for i in range(self.ntest)])
+        self.evaluator = Evaluator(False,
+                pl_module.generator, noise_dim=cfg.noise_dim,
+                batch_size=cfg.ntest,
+                inception_nsamples=33)
+
+    @torch.no_grad()
+    def draw_and_save(self, pl_module):
+        filename=f"{self.filename}".replace(".", f"_{pl_module.global_step}.")
+        self.evaluator.make_video(os.path.join(self.save_dir,filename), self.zvid, self.render_poses, as_gif=True)
+
+    def draw(self, pl_module):
+        pass

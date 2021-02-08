@@ -1,1 +1,1 @@
-_target_: core.submodules.graf.graf.figures.GrafSampleGrid
+_target_: core.figures.types.GrafSampleGrid

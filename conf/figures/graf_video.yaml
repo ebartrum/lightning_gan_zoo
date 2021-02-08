@@ -1,1 +1,1 @@
-_target_: core.submodules.graf.graf.figures.GrafVideo
+_target_: core.figures.types.GrafVideo
