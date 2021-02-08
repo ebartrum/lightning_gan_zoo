@@ -1,5 +1,0 @@
-output
-data
-*_lmdb
-__pycache__
-*.pyc
