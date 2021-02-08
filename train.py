@@ -57,16 +57,12 @@ class GAN(pl.LightningModule):
                 img_grid_fake, self.current_epoch)
 
     def configure_optimizers(self):
-        opt_disc = instantiate(self.cfg.optimiser,
+        opt_disc = instantiate(self.cfg.d_optimiser,
                     self.discriminator.parameters())
-        opt_gen = instantiate(self.cfg.optimiser,
+        opt_gen = instantiate(self.cfg.g_optimiser,
                     self.generator.parameters())
-        scheduler_disc = optim.lr_scheduler.StepLR(opt_disc,
-                step_size=self.cfg.optimisation.anneal_every,
-                gamma=self.cfg.optimisation.lr_anneal)
-        scheduler_gen = optim.lr_scheduler.StepLR(opt_gen,
-                step_size=self.cfg.optimisation.anneal_every,
-                gamma=self.cfg.optimisation.lr_anneal)
+        scheduler_disc = instantiate(self.cfg.scheduler, opt_disc)
+        scheduler_gen = instantiate(self.cfg.scheduler, opt_gen)
         return ({'optimizer': opt_disc, 'lr_scheduler': scheduler_disc,
                     'frequency': self.cfg.optimisation.disc_freq},
                {'optimizer': opt_gen, 'lr_scheduler': scheduler_gen,
@@ -75,7 +71,7 @@ class GAN(pl.LightningModule):
     def train_dataloader(self):
         dataset = instantiate(self.cfg.dataset.train, transform=self.transform)
         return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
-                batch_size=self.cfg.train.batch_size)
+            batch_size=self.cfg.train.batch_size, shuffle=True, drop_last=True)
 
     def val_dataloader(self):
         dataset = instantiate(self.cfg.dataset.val, transform=self.transform)

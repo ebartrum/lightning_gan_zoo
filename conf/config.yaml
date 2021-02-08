@@ -18,8 +18,14 @@ optimisation:
   gen_freq: 1
   lr_anneal: 1
   anneal_every: -1
-loss_weight: MISSING
 optimiser: MISSING
+g_optimiser: "${optimiser}"
+d_optimiser: "${optimiser}"
+scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  step_size: "${optimisation.anneal_every}"
+  gamma: "${optimisation.lr_anneal}"
+loss_weight: MISSING
 val:
   use_fid: True
   inception_stats_filepath: "${dataset.root}/val_inception_stats.pkl"
