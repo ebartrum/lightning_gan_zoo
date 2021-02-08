@@ -96,7 +96,7 @@ def train(cfg: DictConfig) -> None:
             else cfg.version
     tb_logger = CustomTensorBoardLogger('output/',
             name=cfg.name, version=version, default_hp_metric=False)
-    model = GAN(cfg, logging_dir=tb_logger.log_dir)
+    model = instantiate(cfg.lm, cfg, logging_dir=tb_logger.log_dir)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
                 parent_dir=tb_logger.log_dir,

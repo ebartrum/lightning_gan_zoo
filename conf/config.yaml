@@ -1,6 +1,8 @@
 # @package _global_
 name: MISSING
 version: "${submission_details.version}"
+lm:
+  _target_: train.GAN
 train:
   batch_size: 128
   img_size: 64
