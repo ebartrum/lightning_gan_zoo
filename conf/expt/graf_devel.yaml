@@ -2,7 +2,7 @@
 name: graf_devel
 version: "${submission_details.version}"
 lm:
-  _target_: core.submodules.graf.train.GRAF
+  _target_: core.lightning_modules.GRAF
 train:
   batch_size: 4
   noise_dim: 32
@@ -29,12 +29,12 @@ optimisation:
   equalize_lr: False
   gen_freq: 1
   disc_freq: 1
-disc_optimiser:
+d_optimiser:
   _target_: torch.optim.RMSprop
   lr: "${optimisation.lr_d}"
   alpha: 0.99
   eps: 1e-8
-gen_optimiser:
+g_optimiser:
   _target_: torch.optim.RMSprop
   lr: "${optimisation.lr_g}"
   alpha: 0.99
@@ -85,7 +85,10 @@ generator:
   _target_:
     core.submodules.graf.graf.config.build_generator
   config:
-    "${}"
+    nerf: "${nerf}"
+    train: "${train}"
+    data: "${data}"
+    ray_sampler: "${ray_sampler}"
 discriminator:
   _target_:
     core.submodules.graf.graf.config.build_discriminator
@@ -99,6 +102,7 @@ figure_details:
     noise_dim: "${train.noise_dim}"
     data: "${data}"
     monitor:
+    every_n_train_step: 500
 hydra:
   output_subdir: null
   run:

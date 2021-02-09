@@ -1,5 +1,8 @@
+n_channels: 3
+root: "${filepaths.celeb_a_root}"
 train:
   _target_: core.submodules.graf.graf.config.get_dataset
-  config: "${}"
+  config:
+    data: "${data}"
 test: "${dataset.train}"
 val: "${dataset.train}"

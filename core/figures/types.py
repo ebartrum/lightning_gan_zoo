@@ -15,14 +15,15 @@ from core.submodules.graf.graf.gan_training import Evaluator
 from core.submodules.graf.graf.config import compute_render_poses
 
 class Figure(Callback):
-    def __init__(self, cfg, parent_dir, pl_module, monitor=None):
+    def __init__(self, cfg, parent_dir, pl_module):
        self.save_dir = os.path.join(parent_dir, cfg.dir)
        self.filename = cfg.filename if cfg.filename else\
                f"{self.__class__.__name__}.png"
        if not os.path.exists(self.save_dir):
            os.makedirs(self.save_dir)
-       self.monitor = monitor
+       self.monitor = cfg.monitor
        self.current_best_metric = np.inf
+       self.every_n_train_step = cfg.every_n_train_step
 
     @abstractmethod
     def draw(self, pl_module):
@@ -32,34 +33,40 @@ class Figure(Callback):
         """
         pass
 
-    def save(self, array):
+    def save(self, array, filename=None):
+        if filename is None:
+            filename = self.filename
         assert array.min()>=0 and array.max()<=1,\
                 "Figure array should lie in [0,1]"
         array = (array*255).astype(int)
-        imageio.imwrite(f"{self.save_dir}/{self.filename}", array)
+        imageio.imwrite(f"{self.save_dir}/{filename}", array)
 
     def draw_and_save(self, pl_module):
         fig_array = self.draw(pl_module)
         self.save(fig_array)
 
-    def on_validation_end(self, trainer, pl_module):
-        if self.monitor is None:
-            print(f"Drawing & saving {self.filename}...")
-            self.draw_and_save(pl_module)
-        else:
-            current_metrics = deepcopy(
-                    trainer.logger_connector.logged_metrics)
-            current_monitor = current_metrics[self.monitor]
-            if current_monitor < self.current_best_metric:
-                self.current_best_metric = current_monitor
+    @torch.no_grad()
+    def on_batch_start(self, trainer, pl_module):
+        if pl_module.global_step % self.every_n_train_step == 0: 
+            pl_module.eval()
+            if self.monitor is None:
                 print(f"Drawing & saving {self.filename}...")
                 self.draw_and_save(pl_module)
             else:
-                print(f"Current metric {current_monitor} is worse than current best {self.current_best_metric}. Skipping figures")
+                current_metrics = deepcopy(
+                        trainer.logger_connector.logged_metrics)
+                current_monitor = current_metrics[self.monitor]
+                if current_monitor < self.current_best_metric:
+                    self.current_best_metric = current_monitor
+                    print(f"Drawing & saving {self.filename}...")
+                    self.draw_and_save(pl_module)
+                else:
+                    print(f"Current metric {current_monitor} is worse than current best {self.current_best_metric}. Skipping figures")
+            pl_module.train()
 
 class AnimationFigure(Figure):
-    def __init__(self, cfg, parent_dir, pl_module, monitor=None):
-       super(AnimationFigure, self).__init__(cfg, parent_dir, pl_module, monitor)
+    def __init__(self, cfg, parent_dir, pl_module):
+       super(AnimationFigure, self).__init__(cfg, parent_dir, pl_module)
        self.filename = cfg.filename if cfg.filename else\
                f"{self.__class__.__name__}.gif"
 
@@ -90,8 +97,8 @@ class AnimationFigure(Figure):
         self.save(array_list)
 
 class Grid(Figure):
-    def __init__(self, cfg, parent_dir, pl_module, monitor=None, ncol=4):
-        super(Grid, self).__init__(cfg, parent_dir, pl_module, monitor)
+    def __init__(self, cfg, parent_dir, pl_module, ncol=4):
+        super(Grid, self).__init__(cfg, parent_dir, pl_module)
         self.ncol = ncol
 
     @torch.no_grad()
@@ -105,16 +112,16 @@ class Grid(Figure):
         return fig_array
 
 class AnimationGrid(AnimationFigure):
-    def __init__(self, cfg, parent_dir, pl_module, monitor=None, ncol=4):
-        super(AnimationGrid, self).__init__(cfg, parent_dir, pl_module, monitor)
+    def __init__(self, cfg, parent_dir, pl_module, ncol=4):
+        super(AnimationGrid, self).__init__(cfg, parent_dir, pl_module)
         self.ncol = ncol
 
     def draw(self, pl_module):
         pass
 
 class SampleGrid(Grid):
-    def __init__(self, cfg, parent_dir, pl_module, monitor=None, ncol=4):
-        super(SampleGrid, self).__init__(cfg, parent_dir, pl_module, monitor, ncol)
+    def __init__(self, cfg, parent_dir, pl_module, ncol=4):
+        super(SampleGrid, self).__init__(cfg, parent_dir, pl_module, ncol)
 
     @torch.no_grad()
     def create_rows(self, pl_module):
@@ -125,8 +132,8 @@ class SampleGrid(Grid):
         return rows
 
 class Interpolation(AnimationGrid):
-    def __init__(self, cfg, parent_dir, pl_module, monitor=None):
-        super(Interpolation, self).__init__(cfg, parent_dir, pl_module, monitor)
+    def __init__(self, cfg, parent_dir, pl_module):
+        super(Interpolation, self).__init__(cfg, parent_dir, pl_module)
 
     def draw(self, pl_module):
         n_frames = 40

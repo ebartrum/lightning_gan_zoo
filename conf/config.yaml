@@ -41,6 +41,7 @@ figure_details:
     dir: "figures"
     filename: ""
     monitor: fid
+    every_n_train_step: 500
 hydra:
   output_subdir: null
   run:

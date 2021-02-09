@@ -1,8 +1,6 @@
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
-from torch.utils.data import DataLoader
 import os
-import torchvision
 from torch.nn import functional as F
 from pytorch_lightning.callbacks import ModelCheckpoint
 from core.logger import CustomTensorBoardLogger
