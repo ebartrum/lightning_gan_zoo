@@ -109,33 +109,25 @@ class GRAF(GAN):
 
         x_fake = self.generator(z)
         d_fake = self.discriminator(x_fake)
-        gloss = self.compute_loss(d_fake, 1)
+        gloss = self.criterion(d_fake, torch.ones_like(d_fake))
         self.log('generator_loss', gloss)
         return gloss
 
     def discriminator_trainstep(self, x_real, z):
         x_real.requires_grad_()
         d_real = self.discriminator(x_real)
-        dloss_real = self.compute_loss(d_real, 1)
+        dloss_real = self.criterion(d_real, torch.ones_like(d_real))
 
         with torch.no_grad():
             x_fake = self.generator(z)
         x_fake.requires_grad_()
         d_fake = self.discriminator(x_fake)
-        dloss_fake = self.compute_loss(d_fake, 0)
+        dloss_fake = self.criterion(d_fake, torch.zeros_like(d_fake))
         dloss = (dloss_real + dloss_fake)
         r1_reg = self.reg_param * compute_grad2(d_real, x_real).mean()
         self.log('discriminator_loss', dloss)
         self.log('regularizer_loss', r1_reg)
         return r1_reg + dloss
-
-    def compute_loss(self, d_outs, target):
-        d_outs = [d_outs] if not isinstance(d_outs, list) else d_outs
-        loss = 0
-        for d_out in d_outs:
-            targets = d_out.new_full(size=d_out.size(), fill_value=target)
-            loss += F.binary_cross_entropy_with_logits(d_out, targets)
-        return loss / len(d_outs)
 
     def validation_step(self, batch, batch_idx):
         self.log("fid", 1/(self.global_step+1))
