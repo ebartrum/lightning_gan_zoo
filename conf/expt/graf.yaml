@@ -2,7 +2,7 @@
 name: graf
 version: "${submission_details.version}"
 lm:
-  _target_: core.submodules.lightning_modules.GRAF
+  _target_: core.lightning_modules.GRAF
 train:
   batch_size: 8
   noise_dim: 256
@@ -29,12 +29,12 @@ optimisation:
   equalize_lr: False
   gen_freq: 1
   disc_freq: 1
-disc_optimiser:
+d_optimiser:
   _target_: torch.optim.RMSprop
   lr: "${optimisation.lr_d}"
   alpha: 0.99
   eps: 1e-8
-gen_optimiser:
+g_optimiser:
   _target_: torch.optim.RMSprop
   lr: "${optimisation.lr_g}"
   alpha: 0.99
