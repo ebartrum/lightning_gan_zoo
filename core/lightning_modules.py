@@ -3,7 +3,7 @@ from hydra.utils import instantiate, call
 from torchvision import transforms
 from torch import nn, optim
 import torch
-from core.utils import init_weights, VerboseShapeExecution
+from core.utils import init_weights, VerboseShapeExecution, compute_grad2
 from torch.utils.data import DataLoader
 import torchvision
 from core.submodules.graf.graf.config import get_hwfr
@@ -124,7 +124,7 @@ class GRAF(GAN):
         d_fake = self.discriminator(x_fake)
         dloss_fake = self.compute_loss(d_fake, 0)
         dloss = (dloss_real + dloss_fake)
-        r1_reg = self.reg_param * self.compute_grad2(d_real, x_real).mean()
+        r1_reg = self.reg_param * compute_grad2(d_real, x_real).mean()
         self.log('discriminator_loss', dloss)
         self.log('regularizer_loss', r1_reg)
         return r1_reg + dloss
@@ -136,20 +136,6 @@ class GRAF(GAN):
             targets = d_out.new_full(size=d_out.size(), fill_value=target)
             loss += F.binary_cross_entropy_with_logits(d_out, targets)
         return loss / len(d_outs)
-
-    def compute_grad2(self, d_outs, x_in):
-        d_outs = [d_outs] if not isinstance(d_outs, list) else d_outs
-        reg = 0
-        for d_out in d_outs:
-            batch_size = x_in.size(0)
-            grad_dout = autograd.grad(
-                outputs=d_out.sum(), inputs=x_in,
-                create_graph=True, retain_graph=True, only_inputs=True
-            )[0]
-            grad_dout2 = grad_dout.pow(2)
-            assert(grad_dout2.size() == x_in.size())
-            reg += grad_dout2.view(batch_size, -1).sum(1)
-        return reg / len(d_outs)
 
     def validation_step(self, batch, batch_idx):
         self.log("fid", 1/(self.global_step+1))
