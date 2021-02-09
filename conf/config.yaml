@@ -2,7 +2,7 @@
 name: MISSING
 version: "${submission_details.version}"
 lm:
-  _target_: train.GAN
+  _target_: core.lightning_modules.GAN
 train:
   batch_size: 128
   img_size: 64
