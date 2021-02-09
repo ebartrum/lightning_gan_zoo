@@ -4,5 +4,6 @@ train:
   _target_: core.submodules.graf.graf.config.get_dataset
   config:
     data: "${data}"
+    root: "${filepaths.celeb_a_root}/train/face"
 test: "${dataset.train}"
 val: "${dataset.train}"

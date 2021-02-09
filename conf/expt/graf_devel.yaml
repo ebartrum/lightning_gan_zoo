@@ -47,7 +47,6 @@ scheduler:
 loss_weight:
   reg_param: 10.
 data:
-  datadir: /home/ed/datasets/img_align_celeba/train/face
   type: celebA
   imsize: 32
   white_bkgd: False
