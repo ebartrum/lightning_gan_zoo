@@ -94,7 +94,7 @@ class GRAF(GAN):
         self.generator.ray_sampler.iterations = self.global_step//2   # for scale annealing
 
         # Sample patches for real data
-        rgbs = self.img_to_patch(x_real.to(self.device))          # N_samples x C
+        rgbs = self.img_to_patch(x_real.to(self.device))
         z = torch.randn(self.cfg['train']['batch_size'],
                 self.cfg['train']['noise_dim'], device=self.device)
 
@@ -114,15 +114,12 @@ class GRAF(GAN):
         return gloss
 
     def discriminator_trainstep(self, x_real, z):
-        # On real data
         x_real.requires_grad_()
         d_real = self.discriminator(x_real)
         dloss_real = self.compute_loss(d_real, 1)
 
-        # On fake data
         with torch.no_grad():
             x_fake = self.generator(z)
-
         x_fake.requires_grad_()
         d_fake = self.discriminator(x_fake)
         dloss_fake = self.compute_loss(d_fake, 0)
