@@ -110,5 +110,4 @@ hydra:
     disable_existing_loggers: false
 defaults:
  - /figures@figures.graf_sample_grid: graf_sample_grid
- - /figures@figures.graf_video: graf_video
  - override /dataset: graf
