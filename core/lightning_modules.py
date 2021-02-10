@@ -106,7 +106,6 @@ class GRAF(GAN):
     def generator_trainstep(self, z):
         if self.cfg['nerf']['decrease_noise']:
           self.generator.decrease_nerf_noise(self.global_step//2)
-
         x_fake = self.generator(z)
         d_fake = self.discriminator(x_fake)
         gloss = self.criterion(d_fake, torch.ones_like(d_fake))

@@ -62,6 +62,7 @@ data:
   vmax: 0.45642212862617093   # 85 deg
   crop: 0
 nerf:
+  type: normal
   i_embed: 0
   use_viewdirs: True
   multires: 10
