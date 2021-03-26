@@ -1,0 +1,12 @@
+_target_: torchvision.datasets.ImageFolder
+n_channels: 3
+root: "${filepaths.celeb_a_root}"
+train:
+  root: "${dataset.val.root}"
+  _target_: "${dataset._target_}"
+val:
+  root: "${dataset.root}/val"
+  _target_: "${dataset._target_}"
+test:
+  root: "${dataset.root}/test"
+  _target_: "${dataset._target_}"
