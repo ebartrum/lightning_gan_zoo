@@ -35,7 +35,7 @@ class GAN(pl.LightningModule):
                 [0.5 for _ in range(cfg.train.channels_img)],
                 [0.5 for _ in range(cfg.train.channels_img)])])
         self.criterion = nn.BCELoss()
-        self.fixed_noise = torch.randn(32, cfg.train.noise_dim, 1, 1)
+        self.fixed_noise = torch.randn(8, cfg.train.noise_dim, 1, 1)
         self.discriminator.apply(init_weights)
         self.generator.apply(init_weights)
         if cfg.debug.verbose_shape:
@@ -46,9 +46,12 @@ class GAN(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         real, _ = batch
+        return {'real': real}
+
+    def validation_epoch_end(self, outputs):
+        real = outputs[0]['real'][:len(self.fixed_noise)]
         noise = self.fixed_noise.to(self.device)
         fake = self.generator(noise)
-        
         img_grid_real = torchvision.utils.make_grid(real, normalize=True)
         img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)
         self.logger.experiment.add_image('Real',
@@ -102,11 +105,11 @@ def train(cfg: DictConfig) -> None:
             name=cfg.name, version=version, default_hp_metric=False)
     model = GAN(cfg, logging_dir=tb_logger.log_dir)
     callbacks = []
-    # callbacks = [instantiate(fig,
-    #             cfg=cfg.figure_details,
-    #             parent_dir=tb_logger.log_dir,
-    #             monitor='fid')
-    #         for fig in cfg.figures.values()]
+    callbacks = [instantiate(fig,
+                cfg=cfg.figure_details,
+                parent_dir=tb_logger.log_dir)
+                # monitor='fid')
+            for fig in cfg.figures.values()]
                 
     # callbacks.append(ModelCheckpoint(monitor='fid',
     #         filename='model-{epoch:02d}-{fid:.2f}'))
@@ -116,7 +119,8 @@ def train(cfg: DictConfig) -> None:
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
 
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
-            logger=tb_logger, deterministic=True,
+            logger=tb_logger,
+            deterministic=True,
             fast_dev_run=cfg.debug.fast_dev_run, callbacks=callbacks,
             resume_from_checkpoint=ckpt_path)    
     trainer.fit(model) 
