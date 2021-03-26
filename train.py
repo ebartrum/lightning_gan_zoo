@@ -111,8 +111,9 @@ def train(cfg: DictConfig) -> None:
                 # monitor='fid')
             for fig in cfg.figures.values()]
                 
-    # callbacks.append(ModelCheckpoint(monitor='fid',
-    #         filename='model-{epoch:02d}-{fid:.2f}'))
+    callbacks.append(ModelCheckpoint(
+        # monitor='fid',
+            filename='model_best'))
     # callbacks.append(FIDCallback(db_stats=cfg.val.inception_stats_filepath,
     #         cfg=cfg, data_transform=model.transform,
     #         fid_name="fid", n_samples=cfg.val.fid_n_samples))
