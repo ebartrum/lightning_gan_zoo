@@ -5,8 +5,8 @@ train:
   root: "${dataset.root}/train"
   _target_: "${dataset._target_}"
 val:
-  root: "${dataset.root}/val"
+  root: "${dataset.train.root}"
   _target_: "${dataset._target_}"
 test:
-  root: "${dataset.root}/test"
+  root: "${dataset.train.root}"
   _target_: "${dataset._target_}"
