@@ -7,7 +7,7 @@ train:
   num_workers: 4
   channels_img: "${dataset.n_channels}"
   noise_dim: 100
-  num_epochs: 99
+  num_epochs: 99999
   features_disc: 64
   features_gen: 64
   ckpt_dir:
