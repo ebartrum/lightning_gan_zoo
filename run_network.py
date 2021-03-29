@@ -101,13 +101,19 @@ def train(cfg: DictConfig) -> None:
     seed_everything(42)
     version = submitit.JobEnvironment().job_id if cfg.version=="$slurm_job_id"\
             else cfg.version
-    tb_logger = CustomTensorBoardLogger('output/',
-            name=cfg.name, version=version, default_hp_metric=False)
-    model = GAN(cfg, logging_dir=tb_logger.log_dir)
-    callbacks = []
+    # tb_logger = CustomTensorBoardLogger('output/',
+    #         name=cfg.name, version=version, default_hp_metric=False)
+    from pytorch_lightning.loggers import TestTubeLogger
+    tb_logger = TestTubeLogger('output/',
+            name=cfg.name, version=version)
+
+    
+    model = GAN(cfg, logging_dir=tb_logger.save_dir)
+    callback_dir = tb_logger.experiment.get_data_path(
+            tb_logger.experiment.name, tb_logger.experiment.version)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
-                parent_dir=tb_logger.log_dir)
+                parent_dir=callback_dir)
                 # monitor='fid')
             for fig in cfg.figures.values()]
                 
