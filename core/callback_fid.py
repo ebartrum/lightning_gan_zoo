@@ -4,7 +4,25 @@ import torch
 import os
 import imageio
 import os
-from pytorch_fid import fid_score
+from pytorch_fid.fid_score import compute_statistics_of_path,\
+        calculate_frechet_distance
+from pytorch_fid.inception import InceptionV3
+import numpy as np
+
+def calculate_inception_statistics_on_paths(paths, batch_size, device, dims):
+    for p in paths:
+        if not os.path.exists(p):
+            raise RuntimeError('Invalid path: %s' % p)
+
+    block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
+
+    model = InceptionV3([block_idx]).to(device)
+
+    m1, s1 = compute_statistics_of_path(paths[0], model, batch_size,
+                                        dims, device)
+    m2, s2 = compute_statistics_of_path(paths[1], model, batch_size,
+                                        dims, device)
+    return m1, s1, m2, s2
 
 class FIDCallback(pl.callbacks.base.Callback):
     def __init__(self, real_img_dir, fake_img_dir, fid_name, cfg,
@@ -12,6 +30,13 @@ class FIDCallback(pl.callbacks.base.Callback):
         self.real_img_dir = os.path.join(real_img_dir, "face")
         if not os.path.exists(fake_img_dir):
             os.makedirs(fake_img_dir)
+
+        cache_files = list(
+                filter(lambda s: ".npz" in s, os.listdir(self.real_img_dir)))
+        self.real_statistics_cache =\
+                os.path.join(self.real_img_dir, cache_files[0])\
+                if len(cache_files) else None
+
         self.fake_img_dir = fake_img_dir
         self.n_samples = n_samples
         self.batch_size = batch_size
@@ -29,6 +54,11 @@ class FIDCallback(pl.callbacks.base.Callback):
         if os.path.exists(cached_filepath):
             os.remove(cached_filepath)
 
+    def cache_statistics(self, mu, sigma):
+        cache_filename = os.path.join(self.real_img_dir, "inception_cache.npz")
+        np.savez(cache_filename, mu=mu, sigma=sigma)
+        self.real_statistics_cache = cache_filename
+        
     def on_validation_epoch_start(self, trainer, pl_module):
         self.clear_fake_img_dir()
         pl_module.eval()
@@ -54,12 +84,17 @@ class FIDCallback(pl.callbacks.base.Callback):
                     imageio.imwrite(f"{self.fake_img_dir}/{filename}", sample)
             
         current_device = pl_module.device
-        # pl_module.to("cpu")
-        # torch.cuda.empty_cache()
-        fid = fid_score.calculate_fid_given_paths(
-                [self.real_img_dir, self.fake_img_dir],
+        real_img_path = self.real_statistics_cache\
+                if self.real_statistics_cache else self.real_img_dir
+        m1, s1, m2, s2 = calculate_inception_statistics_on_paths(
+                [real_img_path, self.fake_img_dir],
                 batch_size=16,
                 device=current_device, dims=2048) 
+
+        if self.real_statistics_cache is None:
+            self.cache_statistics(m1,s1)
+
+        fid = calculate_frechet_distance(m1, s1, m2, s2)
         print(f"fid is {fid}")
         pl_module.to(current_device)
         # log FID
