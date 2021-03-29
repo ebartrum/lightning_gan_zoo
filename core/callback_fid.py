@@ -13,11 +13,8 @@ def calculate_inception_statistics_on_paths(paths, batch_size, device, dims):
     for p in paths:
         if not os.path.exists(p):
             raise RuntimeError('Invalid path: %s' % p)
-
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
-
     model = InceptionV3([block_idx]).to(device)
-
     m1, s1 = compute_statistics_of_path(paths[0], model, batch_size,
                                         dims, device)
     m2, s2 = compute_statistics_of_path(paths[1], model, batch_size,
