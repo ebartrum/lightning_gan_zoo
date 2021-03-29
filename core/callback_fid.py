@@ -1,140 +1,68 @@
-''' fid code and inception model from https://github.com/mseitzer/pytorch-fid '''
-
 import pytorch_lightning as pl
-from pytorch_lightning.utilities import rank_zero_only
-from scipy import linalg
-from core.submodules.pytorch_fid.src.pytorch_fid.inception import InceptionV3 # https://github.com/mseitzer/pytorch-fid
-import pickle
+from tqdm import tqdm
 import torch
-import numpy as np
-from tqdm import tqdm
 import os
-from hydra.utils import instantiate
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-
-def load_patched_inception_v3():
-    inception_feat = InceptionV3([3], normalize_input=False).eval()
-    return inception_feat
-
-def calc_fid(sample_mean, sample_cov, real_mean, real_cov, eps=1e-6):
-    ''' https://github.com/rosinality/stylegan2-pytorch/blob/master/fid.py '''
-    cov_sqrt, _ = linalg.sqrtm(sample_cov @ real_cov, disp=False)
-
-    if not np.isfinite(cov_sqrt).all():
-        print('product of cov matrices is singular')
-        offset = np.eye(sample_cov.shape[0]) * eps
-        cov_sqrt = linalg.sqrtm((sample_cov + offset) @ (real_cov + offset))
-
-    if np.iscomplexobj(cov_sqrt):
-        if not np.allclose(np.diagonal(cov_sqrt).imag, 0, atol=1e-3):
-            m = np.max(np.abs(cov_sqrt.imag))
-
-            raise ValueError(f'Imaginary component {m}')
-
-        cov_sqrt = cov_sqrt.real
-
-    mean_diff = sample_mean - real_mean
-    mean_norm = mean_diff @ mean_diff
-
-    trace = np.trace(sample_cov) + np.trace(real_cov) - 2 * np.trace(cov_sqrt)
-
-    fid = mean_norm + trace
-
-    return fid
+import imageio
+import os
+from pytorch_fid import fid_score
 
 class FIDCallback(pl.callbacks.base.Callback):
-    '''
-    db_stats - pickle file with inception stats on real data
-    fid_name - name for logging
-    n_samples - number of samples for FID
-    '''
-    def __init__(self, db_stats, fid_name, cfg,
+    def __init__(self, real_img_dir, fake_img_dir, fid_name, cfg,
             data_transform=None, n_samples=5000, batch_size=16):
+        self.real_img_dir = os.path.join(real_img_dir, "face")
+        if not os.path.exists(fake_img_dir):
+            os.makedirs(fake_img_dir)
+        self.fake_img_dir = fake_img_dir
         self.n_samples = n_samples
         self.batch_size = batch_size
         self.fid_name = fid_name
-        self.inception = load_patched_inception_v3()
         self.cfg = cfg
+        self.z_samples = torch.split(
+                torch.randn(n_samples, self.cfg.train.noise_dim,1,1),
+                batch_size)
 
-        if not os.path.isfile(db_stats):
-            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-            print("Ground Truth inception stats pickle not found.")
-            print(f"Creating using device {device}")
-            self.inception = self.inception.to(device)
-            features = []
+    def clear_fake_img_dir(self):
+        img_filepath = os.path.join(self.fake_img_dir, "*.png")
+        cached_filepath = os.path.join(self.fake_img_dir, "*.npz")
+        if os.path.exists(img_filepath):
+            os.remove(img_filepath)
+        if os.path.exists(cached_filepath):
+            os.remove(cached_filepath)
 
-            real_dataset = instantiate(cfg.dataset.val,
-                    transform=data_transform)
-            real_dataloader = DataLoader(real_dataset, num_workers=cfg.train.num_workers,
-                batch_size=batch_size)
-
-            total_batches = len(real_dataloader)
-            for i, (real_im, _) in enumerate(tqdm(real_dataloader,
-                desc="Getting features for real data")):
-                real_im = real_im.to(device)
-                if real_im.shape[1] == 1:
-                    #convert greyscale to RGB
-                    real_im = torch.cat(3*[real_im],dim=1)
-                feat = self.inception(real_im)[0].view(real_im.shape[0], -1) # compute features
-                features.append(feat.to('cpu'))
-            features = torch.cat(features, 0).numpy()
-            self.inception = self.inception.to(torch.device('cpu'))
-            self.real_mean = np.mean(features, 0)
-            self.real_cov = np.cov(features, rowvar=False)
-
-            with open(db_stats, 'wb') as handle:
-                pickle.dump({'mean':self.real_mean, 'cov':self.real_cov},
-                        handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-        # Load inception statistics computed on real data
-        with open(db_stats, 'rb') as f:
-            embeds = pickle.load(f)
-            self.real_mean = embeds['mean']
-            self.real_cov = embeds['cov']
-
-    def to(self, device):
-        self.inception = self.inception.to(device)
-        self.z_samples = [z.to(device) for z in self.z_samples]
-
-    @rank_zero_only
-    def on_validation_start(self, trainer, pl_module):
-        '''
-        Initialize random noise and inception module
-        I keep the model and the noise on CPU when it's not needed to preserve memory; could also be initialized on pl_module.device
-        '''
-        self.z_samples = [torch.randn(self.batch_size, self.cfg.train.noise_dim, 1, 1) for i in range(0, self.n_samples, self.batch_size)]
-        print('\nFID initialized')
-
-    @rank_zero_only
     def on_validation_epoch_start(self, trainer, pl_module):
+        self.clear_fake_img_dir()
         pl_module.eval()
         
         with torch.no_grad():
-            self.to(pl_module.device)
-            features = []
-            
             total_batches = len(self.z_samples)
             for i, z in enumerate(tqdm(self.z_samples,
-                desc="Getting features for fake images.")):
-                inputs = z
-                fake = pl_module.generator(z) # get fake images
-                if fake.shape[1] == 1:
+                desc="Generating test samples")):
+                inputs = z.to(pl_module.device)
+                samples = pl_module.generator(z.to(pl_module.device)) # get fake images
+                if samples.shape[1] == 1:
                     #convert greyscale to RGB
-                    fake = torch.cat(3*[fake],dim=1)
-                feat = self.inception(fake)[0].view(fake.shape[0], -1) # compute features
-                features.append(feat.to('cpu'))
+                    samples = torch.cat(3*[samples],dim=1)
 
-            features = torch.cat(features, 0)[:self.n_samples].numpy()
+                samples = torch.clamp(samples, 0, 1)
+                samples = samples.permute(0,2,3,1)
+                samples = samples.detach().cpu().numpy()
+                samples = (samples*255).astype(int)
 
-            sample_mean = np.mean(features, 0)
-            sample_cov = np.cov(features, rowvar=False)
-
-            fid = calc_fid(sample_mean, sample_cov, self.real_mean, self.real_cov)
-            print(f"FID: {fid}\n")
-
-            # log FID
-            pl_module.log(self.fid_name, fid)
-            self.to(torch.device('cpu'))
+                img_indices = [i*self.batch_size + batch_index for batch_index in range(len(z))]
+                filenames = [f"{i}.png" for i in img_indices]
+                for sample, filename in zip(samples, filenames):
+                    imageio.imwrite(f"{self.fake_img_dir}/{filename}", sample)
+            
+        current_device = pl_module.device
+        # pl_module.to("cpu")
+        # torch.cuda.empty_cache()
+        fid = fid_score.calculate_fid_given_paths(
+                [self.real_img_dir, self.fake_img_dir],
+                batch_size=16,
+                device=current_device, dims=2048) 
+        print(f"fid is {fid}")
+        pl_module.to(current_device)
+        # log FID
+        pl_module.log(self.fid_name, fid)
 
         self.last_global_step = trainer.global_step
