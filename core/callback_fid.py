@@ -3,11 +3,26 @@ from tqdm import tqdm
 import torch
 import os
 import imageio
-import os
-from pytorch_fid.fid_score import compute_statistics_of_path,\
+from pytorch_fid.fid_score import calculate_activation_statistics,\
         calculate_frechet_distance
 from pytorch_fid.inception import InceptionV3
 import numpy as np
+import pathlib
+import glob
+
+def compute_statistics_of_path(path, model, batch_size, dims, device):
+    IMAGE_EXTENSIONS = ['bmp', 'jpg', 'jpeg', 'pgm', 'png', 'ppm',
+                    'tif', 'tiff', 'webp']
+
+    if path.endswith('.npz'):
+        with np.load(path) as f:
+            m, s = f['mu'][:], f['sigma'][:]
+    else:
+        files = sorted(list(filter(lambda f: f.endswith(tuple(IMAGE_EXTENSIONS)),
+            glob.iglob(path+'**/**', recursive=True))))
+        m, s = calculate_activation_statistics(files, model, batch_size,
+                                               dims, device)
+    return m, s
 
 def calculate_inception_statistics_on_paths(paths, batch_size, device, dims):
     for p in paths:
@@ -24,7 +39,7 @@ def calculate_inception_statistics_on_paths(paths, batch_size, device, dims):
 class FIDCallback(pl.callbacks.base.Callback):
     def __init__(self, real_img_dir, fake_img_dir, fid_name, cfg,
             data_transform=None, n_samples=5000, batch_size=16):
-        self.real_img_dir = os.path.join(real_img_dir, "face")
+        self.real_img_dir = real_img_dir
         if not os.path.exists(fake_img_dir):
             os.makedirs(fake_img_dir)
 
