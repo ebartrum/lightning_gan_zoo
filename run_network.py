@@ -8,7 +8,7 @@ import torch
 from torch import nn, optim
 from torch.nn import functional as F
 from pytorch_lightning.callbacks import ModelCheckpoint
-from core.logger import CustomTensorBoardLogger
+from pytorch_lightning.loggers import TestTubeLogger
 from core.networks import Discriminator, Generator
 from core.utils import init_weights, VerboseShapeExecution
 from core.callback_fid import FIDCallback
@@ -101,24 +101,20 @@ def train(cfg: DictConfig) -> None:
     seed_everything(42)
     version = submitit.JobEnvironment().job_id if cfg.version=="$slurm_job_id"\
             else cfg.version
-    # tb_logger = CustomTensorBoardLogger('output/',
-    #         name=cfg.name, version=version, default_hp_metric=False)
-    from pytorch_lightning.loggers import TestTubeLogger
     tb_logger = TestTubeLogger('output/',
             name=cfg.name, version=version)
 
-    
     model = GAN(cfg, logging_dir=tb_logger.save_dir)
     callback_dir = tb_logger.experiment.get_data_path(
             tb_logger.experiment.name, tb_logger.experiment.version)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
-                parent_dir=callback_dir)
-                # monitor='fid')
+                parent_dir=callback_dir,
+                monitor='fid')
             for fig in cfg.figures.values()]
                 
     callbacks.append(ModelCheckpoint(
-        # monitor='fid',
+        monitor='fid',
             filename='model_best'))
     callbacks.append(FIDCallback(real_img_dir=cfg.dataset.val.root,
             fake_img_dir=os.path.join(callback_dir,"test_samples"), cfg=cfg,
