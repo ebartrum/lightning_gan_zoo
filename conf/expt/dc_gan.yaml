@@ -1,9 +1,9 @@
 # @package _global_
 name: dc_gan
+model:
+  _target_: core.training_steps.DCGAN
 train:
   img_size: 64
-  training_step:
-    _target_: core.training_steps.dc
 optimisation:
   lr: 2e-4
   beta1: 0.5

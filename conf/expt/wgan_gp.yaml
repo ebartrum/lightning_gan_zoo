@@ -1,10 +1,10 @@
 # @package _global_
 name: wgan_gp
+model:
+  _target_: core.training_steps.WGANGP
 train:
   img_size: 64
   batch_size: 64 
-  training_step:
-    _target_: core.training_steps.wgan_gp
 discriminator:
   _target_: core.networks.Discriminator
   channels_img: "${train.channels_img}"

@@ -1,11 +1,11 @@
 # @package _global_
 name: gan_stability_r1
+model:
+  _target_: core.training_steps.GANStabilityR1
 train:
   batch_size: 64
   img_size: 128
   noise_dim: 256
-  training_step:
-    _target_: core.training_steps.gan_stability_r1
 optimisation:
   lr: 1e-4
   disc_freq: 1

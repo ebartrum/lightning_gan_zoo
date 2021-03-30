@@ -13,7 +13,6 @@ train:
   features_disc: 64
   features_gen: 64
   ckpt_dir:
-  training_step: MISSING
 optimisation:
   lr: MISSING
   disc_freq: 1
