@@ -14,7 +14,6 @@ from core.submodules.gan_stability.metrics import FIDEvaluator
 import numpy as np
 from glob import glob
 import submitit
-from core.training_steps import BaseGAN
 
 def find_ckpt(ckpt_dir):
     ckpt_list = [y for x in os.walk(ckpt_dir) for y in glob(os.path.join(x[0], '*.ckpt'))]
@@ -32,7 +31,7 @@ def train(cfg: DictConfig) -> None:
 
     logging_dir = tb_logger.experiment.get_data_path(
             tb_logger.experiment.name, tb_logger.experiment.version)
-    model = BaseGAN(cfg, logging_dir=logging_dir)
+    model = instantiate(cfg.model, cfg, logging_dir=logging_dir)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
                 parent_dir=logging_dir,

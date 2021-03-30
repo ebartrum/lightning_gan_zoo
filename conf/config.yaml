@@ -1,6 +1,8 @@
 # @package _global_
 name: MISSING
 version: "${submission_details.version}"
+model:
+  _target_: core.training_steps.BaseGAN
 train:
   batch_size: 128
   img_size: 64
