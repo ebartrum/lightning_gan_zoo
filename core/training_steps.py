@@ -8,7 +8,7 @@ from core.utils import gradient_penalty, compute_grad2
 from core.utils import init_weights, VerboseShapeExecution
 from hydra.utils import instantiate, call
 
-class GAN(pl.LightningModule):
+class BaseGAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
         super().__init__()
         self.discriminator = instantiate(cfg.discriminator)

@@ -1,14 +1,11 @@
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
-from torch.utils.data import DataLoader
 import os
-import torchvision
 import torch
 from torch.nn import functional as F
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TestTubeLogger
 from core.networks import Discriminator, Generator
-from core.utils import init_weights, VerboseShapeExecution
 from core.callback_fid import FIDCallback
 import hydra
 from hydra.utils import instantiate, call
@@ -17,7 +14,7 @@ from core.submodules.gan_stability.metrics import FIDEvaluator
 import numpy as np
 from glob import glob
 import submitit
-from core.training_steps import GAN
+from core.training_steps import BaseGAN
 
 def find_ckpt(ckpt_dir):
     ckpt_list = [y for x in os.walk(ckpt_dir) for y in glob(os.path.join(x[0], '*.ckpt'))]
@@ -35,7 +32,7 @@ def train(cfg: DictConfig) -> None:
 
     logging_dir = tb_logger.experiment.get_data_path(
             tb_logger.experiment.name, tb_logger.experiment.version)
-    model = GAN(cfg, logging_dir=logging_dir)
+    model = BaseGAN(cfg, logging_dir=logging_dir)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
                 parent_dir=logging_dir,
