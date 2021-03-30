@@ -102,7 +102,7 @@ def train(cfg: DictConfig) -> None:
     version = submitit.JobEnvironment().job_id if cfg.version=="$slurm_job_id"\
             else cfg.version
     tb_logger = TestTubeLogger('output/',
-            name=cfg.name, version=version)
+            name=cfg.name, version=int(version))
 
     logging_dir = tb_logger.experiment.get_data_path(
             tb_logger.experiment.name, tb_logger.experiment.version)
@@ -114,7 +114,7 @@ def train(cfg: DictConfig) -> None:
             for fig in cfg.figures.values()]
                 
     callbacks.append(ModelCheckpoint(
-        monitor='fid', dirpath=os.path.join(logging_dir,"checkpoints"),
+            monitor='fid', 
             filename='model_best'))
     callbacks.append(FIDCallback(real_img_dir=cfg.dataset.val.root,
             fake_img_dir=os.path.join(logging_dir,"test_samples"), cfg=cfg,
