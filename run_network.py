@@ -114,7 +114,7 @@ def train(cfg: DictConfig) -> None:
             for fig in cfg.figures.values()]
                 
     callbacks.append(ModelCheckpoint(
-        monitor='fid',
+        monitor='fid', dirpath=os.path.join(logging_dir,"checkpoints"),
             filename='model_best'))
     callbacks.append(FIDCallback(real_img_dir=cfg.dataset.val.root,
             fake_img_dir=os.path.join(logging_dir,"test_samples"), cfg=cfg,
