@@ -1,7 +1,7 @@
 # @package _global_
 name: gan_stability_r1
 model:
-  _target_: core.training_steps.GANStabilityR1
+  _target_: core.lightning_module.GANStabilityR1
 train:
   batch_size: 64
   img_size: 128
