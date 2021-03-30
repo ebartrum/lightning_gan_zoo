@@ -115,7 +115,7 @@ def train(cfg: DictConfig) -> None:
                 
     callbacks.append(ModelCheckpoint(
             monitor='fid', 
-            filename='model_best'))
+            filename='model_best-{fid:.2f}'))
     callbacks.append(FIDCallback(real_img_dir=cfg.dataset.val.root,
             fake_img_dir=os.path.join(logging_dir,"test_samples"), cfg=cfg,
             data_transform=model.transform, fid_name="fid",
