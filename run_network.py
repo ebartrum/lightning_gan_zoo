@@ -104,12 +104,12 @@ def train(cfg: DictConfig) -> None:
     tb_logger = TestTubeLogger('output/',
             name=cfg.name, version=version)
 
-    model = GAN(cfg, logging_dir=tb_logger.save_dir)
-    callback_dir = tb_logger.experiment.get_data_path(
+    logging_dir = tb_logger.experiment.get_data_path(
             tb_logger.experiment.name, tb_logger.experiment.version)
+    model = GAN(cfg, logging_dir=logging_dir)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
-                parent_dir=callback_dir,
+                parent_dir=logging_dir,
                 monitor='fid')
             for fig in cfg.figures.values()]
                 
@@ -117,7 +117,7 @@ def train(cfg: DictConfig) -> None:
         monitor='fid',
             filename='model_best'))
     callbacks.append(FIDCallback(real_img_dir=cfg.dataset.val.root,
-            fake_img_dir=os.path.join(callback_dir,"test_samples"), cfg=cfg,
+            fake_img_dir=os.path.join(logging_dir,"test_samples"), cfg=cfg,
             data_transform=model.transform, fid_name="fid",
             n_samples=cfg.val.fid_n_samples))
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
