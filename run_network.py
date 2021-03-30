@@ -99,10 +99,10 @@ def find_ckpt(ckpt_dir):
 @hydra.main(config_path="conf", config_name="config")
 def train(cfg: DictConfig) -> None:
     seed_everything(42)
-    version = submitit.JobEnvironment().job_id if cfg.version=="$slurm_job_id"\
+    version = int(submitit.JobEnvironment().job_id) if cfg.version=="$slurm_job_id"\
             else cfg.version
     tb_logger = TestTubeLogger('output/',
-            name=cfg.name, version=int(version))
+            name=cfg.name, version=version)
 
     logging_dir = tb_logger.experiment.get_data_path(
             tb_logger.experiment.name, tb_logger.experiment.version)
