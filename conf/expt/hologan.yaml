@@ -1,0 +1,35 @@
+# @package _global_
+name: hologan
+model:
+  noise_distn: "${noise_distn}"
+  lm:
+    _target_: core.lightning_module.HOLOGAN
+  noise_dim: 128
+train:
+  img_size: 64
+  num_epochs: 25
+optimisation:
+  lr: 1e-4
+  disc_freq: 1
+  gen_freq: 2
+  beta1: 0.9
+  beta2: 0.999
+optimiser:
+  _target_: torch.optim.Adam
+  lr: "${optimisation.lr}"
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+discriminator:
+  _target_: core.models.hologan_discriminator.Discriminator
+  channels_img: "${train.channels_img}"
+  features_d: "${train.features_disc}"
+generator:
+  _target_: core.models.hologan_generator.Generator
+  channels_noise: "${model.noise_dim}"
+  channels_img: "${train.channels_img}"
+  features_g: "${train.features_gen}"
+defaults:
+  - /figures@figures.sample_grid: sample_grid
+  - /figures@figures.interpolation: interpolation
+  - override /noise_distn: uniform
+  - override /lr_scheduler: hologan
+  - override /dataset: mnist
