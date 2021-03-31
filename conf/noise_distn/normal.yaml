@@ -1,0 +1,3 @@
+_target_: torch.distributions.normal.Normal
+loc: 0
+scale: 1

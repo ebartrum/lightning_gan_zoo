@@ -1,0 +1,3 @@
+_target_: torch.distributions.uniform.Uniform
+low: -1
+high: 1

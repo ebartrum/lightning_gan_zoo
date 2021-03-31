@@ -4,10 +4,7 @@ version: "${submission_details.version}"
 model:
   lm:
     _target_: core.lightning_module.BaseGAN
-  noise_distn:
-    _target_: torch.distributions.normal.Normal
-    loc: 0
-    scale: 1
+  noise_distn: "${noise_distn}"
   noise_dim: 100
 train:
   batch_size: 128
@@ -48,4 +45,5 @@ defaults:
  - dataset: MISSING
  - filepaths: local
  - submission_details: local
+ - noise_distn: normal
  - override hydra/job_logging: disabled
