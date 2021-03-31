@@ -23,7 +23,8 @@ class BaseGAN(pl.LightningModule):
             transforms.Normalize(
                 [0.5 for _ in range(cfg.train.channels_img)],
                 [0.5 for _ in range(cfg.train.channels_img)])])
-        self.criterion = nn.BCELoss()
+        self.criterion = nn.BCEWithLogitsLoss()
+        # self.criterion = nn.BCELoss()
         self.noise_distn = instantiate(cfg.model.noise_distn)
         self.fixed_noise = self.noise_distn.sample((8, cfg.model.noise_dim, 1, 1))
         self.discriminator.apply(init_weights)
@@ -195,10 +196,10 @@ class HOLOGAN(BaseGAN):
 
         # train discriminator
         if optimizer_idx == 0:
-            disc_real = self.discriminator(real).reshape(-1)
+            disc_real, _ = self.discriminator(real)
             loss_disc_real = self.criterion(disc_real,
                     torch.ones_like(disc_real))
-            disc_fake = self.discriminator(fake.detach()).reshape(-1)
+            disc_fake, _ = self.discriminator(fake.detach())
             loss_disc_fake = self.criterion(disc_fake,
                     torch.zeros_like(disc_fake))
             loss_disc = (loss_disc_real + loss_disc_fake) / 2
@@ -207,7 +208,7 @@ class HOLOGAN(BaseGAN):
 
         # train generator
         if optimizer_idx == 1:
-            output = self.discriminator(fake).reshape(-1)
+            output, _ = self.discriminator(fake)
             loss_gen = self.criterion(output, torch.ones_like(output))
             self.log('train/g_loss', loss_gen)
             return loss_gen

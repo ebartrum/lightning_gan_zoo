@@ -1,83 +1,78 @@
 """
-Discriminator and Generator implementation from DCGAN paper
+HoloGAN Discriminator implementation in PyTorch
+May 17, 2020
 """
-import torch
-import torch.nn as nn
-from collections import OrderedDict
+from torch import nn
+
+class BasicBlock(nn.Module):
+    """Basic Block defition of the Discriminator.
+    """
+    def __init__(self, in_planes, out_planes):
+        super(BasicBlock, self).__init__()
+        self.conv2d = nn.Conv2d(in_planes, out_planes, kernel_size=5, stride=2, padding=2)
+        truncated_normal_initializer(self.conv2d.weight)
+        nn.init.constant_(self.conv2d.bias, val=0.0)
+        self.conv2d_spec_norm = nn.utils.spectral_norm(self.conv2d)
+        self.instance_norm = nn.InstanceNorm2d(out_planes)
+        self.lrelu = nn.LeakyReLU(0.2)
+
+    def forward(self, x):
+        out = self.conv2d_spec_norm(x)
+        out = self.instance_norm(out)
+        out = self.lrelu(out)
+        return out
 
 class Discriminator(nn.Module):
-    def __init__(self, channels_img, features_d,
-            norm="batch_norm", final_sigmoid=True):
+    """Discriminator of HoloGAN
+    """
+    def __init__(self, in_planes, out_planes, z_planes):
         super(Discriminator, self).__init__()
-        self.norm = norm
-        self.disc = nn.Sequential(OrderedDict([
-            # input: N x channels_img x 64 x 64
-            ('conv_in', nn.Conv2d(
-                channels_img, features_d, kernel_size=4,
-                stride=2, padding=1, bias=False
-            )),
-            ('leaky_relu', nn.LeakyReLU(0.2)),
-            # _block(in_channels, out_channels, kernel_size, stride, padding)
-            ('block1', self._block(features_d, features_d * 2, 4, 2, 1)),
-            ('block2', self._block(features_d * 2, features_d * 4, 4, 2, 1)),
-            ('block3', self._block(features_d * 4, features_d * 8, 4, 2, 1)),
-            # After all _block img output is 4x4 (Conv2d below makes into 1x1)
-            ('conv_out', nn.Conv2d(features_d * 8, 1, kernel_size=4,
-                stride=2, padding=0, bias=False)),
-            ('sigmoid', nn.Sigmoid()) if final_sigmoid\
-                    else ('identity', nn.Identity())
-            ]))
+        self.conv2d = nn.Conv2d(in_planes, out_planes, kernel_size=5, stride=2, padding=2)
+        truncated_normal_initializer(self.conv2d.weight)
+        nn.init.constant_(self.conv2d.bias, val=0.0)
 
-    def _block(self, in_channels, out_channels, kernel_size, stride, padding):
-        return nn.Sequential(OrderedDict([
-            ('conv', nn.Conv2d(
-                in_channels,
-                out_channels,
-                kernel_size,
-                stride,
-                padding,
-                bias=False,
-                )),
-            ('batch_norm', nn.BatchNorm2d(out_channels))\
-                    if self.norm=='batch_norm' else\
-                    ('instance_norm2d', nn.InstanceNorm2d(out_channels, affine=True))\
-                    if self.norm=='instance_norm2d' else\
-                    ('identity', nn.Identity()),
-            ('leaky_relu', nn.LeakyReLU(0.2)),
-            ]))
+        self.lrelu = nn.LeakyReLU(0.2)
+        self.blocks = nn.Sequential(
+            BasicBlock(out_planes*1, out_planes*2),
+            BasicBlock(out_planes*2, out_planes*4),
+            BasicBlock(out_planes*4, out_planes*8)
+        )
+
+        self.linear1 = nn.Linear(out_planes*8 * 4 * 4, 1)
+        truncated_normal_initializer(self.linear1.weight)
+        nn.init.constant_(self.linear1.bias, val=0.0)
+
+        self.linear2 = nn.Linear(out_planes*8 * 4 * 4, 128)
+        truncated_normal_initializer(self.linear1.weight)
+        nn.init.constant_(self.linear2.bias, val=0.0)
+
+        self.linear3 = nn.Linear(128, z_planes)
+        truncated_normal_initializer(self.linear1.weight)
+        nn.init.constant_(self.linear3.bias, val=0.0)
+
+        self.sigmoid = nn.Sigmoid()
+        self.tanh = nn.Tanh()
 
     def forward(self, x):
-        return self.disc(x)
+        batch_size = x.size(0)
+        x0 = self.lrelu(self.conv2d(x))
+        x3 = self.blocks(x0)
+        # Flatten
+        x3 = x3.view(batch_size, -1)
 
-class Generator(nn.Module):
-    def __init__(self, channels_noise, channels_img, features_g):
-        super(Generator, self).__init__()
-        self.net = nn.Sequential(OrderedDict([
-            # Input: N x channels_noise x 1 x 1
-            ('block1', self._block(channels_noise, features_g * 16, 4, 1, 0)),  # img: 4x4
-            ('block2', self._block(features_g * 16, features_g * 8, 4, 2, 1)),  # img: 8x8
-            ('block3', self._block(features_g * 8, features_g * 4, 4, 2, 1)),  # img: 16x16
-            ('block4', self._block(features_g * 4, features_g * 2, 4, 2, 1)),  # img: 32x32
-            ('transpose_conv_out', nn.ConvTranspose2d(
-                features_g * 2, channels_img, kernel_size=4,
-                stride=2, padding=1, bias=False)),
-            # Output: N x channels_img x 64 x 64
-            ('tanh', nn.Tanh()),
-            ]))
+        # Returning logits to determine whether the images are real or fake
+        x4 = self.linear1(x3)
 
-    def _block(self, in_channels, out_channels, kernel_size, stride, padding):
-        return nn.Sequential(OrderedDict([
-            ('transpose_conv', nn.ConvTranspose2d(
-                in_channels,
-                out_channels,
-                kernel_size,
-                stride,
-                padding,
-                bias=False,
-                )),
-            ('batch_norm', nn.BatchNorm2d(out_channels)),
-            ('relu', nn.ReLU()),
-            ]))
+        # Recognition network for latent variables has an additional layer
+        encoder = self.lrelu(self.linear2(x3))
+        z_prediction = self.tanh(self.linear3(encoder))
 
-    def forward(self, x):
-        return self.net(x)
+        return x4, z_prediction
+
+def truncated_normal_initializer(weight, mean=0, std=0.02):
+    size = weight.shape
+    tmp = weight.new_empty(size + (4,)).normal_()
+    valid = (tmp < 2) & (tmp > -2)
+    ind = valid.max(-1, keepdim=True)[1]
+    weight.data.copy_(tmp.gather(-1, ind).squeeze(-1))
+    weight.data.mul_(std).add_(mean)

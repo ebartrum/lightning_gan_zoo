@@ -20,8 +20,9 @@ optimiser:
   betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
 discriminator:
   _target_: core.models.hologan_discriminator.Discriminator
-  channels_img: "${train.channels_img}"
-  features_d: "${train.features_disc}"
+  in_planes: "${train.channels_img}"
+  out_planes: 64
+  z_planes: "${model.noise_dim}"
 generator:
   _target_: core.models.hologan_generator.Generator
   channels_noise: "${model.noise_dim}"
