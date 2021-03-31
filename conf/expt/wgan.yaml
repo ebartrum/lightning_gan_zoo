@@ -1,7 +1,8 @@
 # @package _global_
 name: wgan
 model:
-  _target_: core.lightning_module.WGAN
+  lm:
+    _target_: core.lightning_module.WGAN
 train:
   img_size: 64
   batch_size: 64 

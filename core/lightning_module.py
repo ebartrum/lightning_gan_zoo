@@ -24,7 +24,7 @@ class BaseGAN(pl.LightningModule):
                 [0.5 for _ in range(cfg.train.channels_img)],
                 [0.5 for _ in range(cfg.train.channels_img)])])
         self.criterion = nn.BCELoss()
-        self.noise_distn = distributions.normal.Normal(0,1)
+        self.noise_distn = instantiate(cfg.model.noise_distn)
         self.fixed_noise = self.noise_distn.sample((8, cfg.train.noise_dim, 1, 1))
         self.discriminator.apply(init_weights)
         self.generator.apply(init_weights)

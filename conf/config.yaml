@@ -2,7 +2,12 @@
 name: MISSING
 version: "${submission_details.version}"
 model:
-  _target_: core.lightning_module.BaseGAN
+  lm:
+    _target_: core.lightning_module.BaseGAN
+  noise_distn:
+    _target_: torch.distributions.normal.Normal
+    loc: 0
+    scale: 1
 train:
   batch_size: 128
   img_size: 64

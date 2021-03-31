@@ -1,7 +1,8 @@
 # @package _global_
 name: dc_gan
 model:
-  _target_: core.lightning_module.DCGAN
+  lm:
+    _target_: core.lightning_module.DCGAN
 train:
   img_size: 64
 optimisation:

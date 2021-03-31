@@ -1,7 +1,8 @@
 # @package _global_
 name: wgan_gp
 model:
-  _target_: core.lightning_module.WGANGP
+  lm:
+    _target_: core.lightning_module.WGANGP
 train:
   img_size: 64
   batch_size: 64 

@@ -31,7 +31,7 @@ def train(cfg: DictConfig) -> None:
 
     logging_dir = tb_logger.experiment.get_data_path(
             tb_logger.experiment.name, tb_logger.experiment.version)
-    model = instantiate(cfg.model, cfg, logging_dir=logging_dir)
+    model = instantiate(cfg.model.lm, cfg, logging_dir=logging_dir)
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
                 parent_dir=logging_dir,
