@@ -7,13 +7,13 @@ train:
   img_size: 64
   batch_size: 64 
 discriminator:
-  _target_: core.networks.Discriminator
+  _target_: core.models.standard_networks.Discriminator
   channels_img: "${train.channels_img}"
   features_d: "${train.features_disc}"
   norm: instance_norm2d
   final_sigmoid: false
 generator:
-  _target_: core.networks.Generator
+  _target_: core.models.standard_networks.Generator
   channels_noise: "${model.noise_dim}"
   channels_img: "${train.channels_img}"
   features_g: "${train.features_gen}"

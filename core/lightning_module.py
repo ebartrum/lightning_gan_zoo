@@ -186,9 +186,11 @@ class WGANGP(BaseGAN):
 
 class HOLOGAN(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
+        # import ipdb;ipdb.set_trace()
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim, 1, 1)).to(self.device)
+        # view_in = self.generator.sample_view()
         fake = self.generator(noise)
 
         # train discriminator

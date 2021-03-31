@@ -14,11 +14,11 @@ optimiser:
   lr: "${optimisation.lr}"
   betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
 discriminator:
-  _target_: core.networks.Discriminator
+  _target_: core.models.standard_networks.Discriminator
   channels_img: "${train.channels_img}"
   features_d: "${train.features_disc}"
 generator:
-  _target_: core.networks.Generator
+  _target_: core.models.standard_networks.Generator
   channels_noise: "${model.noise_dim}"
   channels_img: "${train.channels_img}"
   features_g: "${train.features_gen}"
