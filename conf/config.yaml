@@ -19,8 +19,7 @@ optimisation:
   lr: MISSING
   disc_freq: 1
   gen_freq: 1
-  lr_anneal: 1
-  anneal_every: -1
+  lr_scheduler: "${lr_scheduler}"
 loss_weight: MISSING
 optimiser: MISSING
 val:
@@ -46,4 +45,5 @@ defaults:
  - filepaths: local
  - submission_details: local
  - noise_distn: normal
+ - lr_scheduler: step_lr
  - override hydra/job_logging: disabled
