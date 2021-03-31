@@ -3,10 +3,10 @@ name: gan_stability_r1
 model:
   lm:
     _target_: core.lightning_module.GANStabilityR1
+  noise_dim: 256
 train:
   batch_size: 64
   img_size: 128
-  noise_dim: 256
 optimisation:
   lr: 1e-4
   disc_freq: 1
@@ -19,7 +19,7 @@ loss_weight:
   reg: 10
 generator:
   _target_: core.submodules.gan_stability.models.resnet.Generator
-  z_dim: "${train.noise_dim}"
+  z_dim: "${model.noise_dim}"
   nlabels: 1
   size: "${train.img_size}"
   nfilter: 16
@@ -27,7 +27,7 @@ generator:
   embed_size: 1
 discriminator:
   _target_: core.submodules.gan_stability.models.resnet.Discriminator
-  z_dim: "${train.noise_dim}"
+  z_dim: "${model.noise_dim}"
   nlabels: 1
   size: "${train.img_size}"
   nfilter: 16

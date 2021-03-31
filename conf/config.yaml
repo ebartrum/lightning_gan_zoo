@@ -8,12 +8,12 @@ model:
     _target_: torch.distributions.normal.Normal
     loc: 0
     scale: 1
+  noise_dim: 100
 train:
   batch_size: 128
   img_size: 64
   num_workers: 4
   channels_img: "${dataset.n_channels}"
-  noise_dim: 100
   num_epochs: 99999
   features_disc: 64
   features_gen: 64

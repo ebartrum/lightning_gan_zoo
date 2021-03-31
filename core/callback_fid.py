@@ -55,7 +55,7 @@ class FIDCallback(pl.callbacks.base.Callback):
         self.fid_name = fid_name
         self.cfg = cfg
         self.z_samples = torch.split(
-                torch.randn(n_samples, self.cfg.train.noise_dim,1,1),
+                torch.randn(n_samples, self.cfg.model.noise_dim,1,1),
                 batch_size)
 
     def clear_fake_img_dir(self):

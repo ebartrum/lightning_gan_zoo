@@ -14,7 +14,7 @@ discriminator:
   final_sigmoid: false
 generator:
   _target_: core.networks.Generator
-  channels_noise: "${train.noise_dim}"
+  channels_noise: "${model.noise_dim}"
   channels_img: "${train.channels_img}"
   features_g: "${train.features_gen}"
 optimisation:

@@ -117,7 +117,7 @@ class SampleGrid(Grid):
     @torch.no_grad()
     def create_rows(self, pl_module):
         noise = torch.randn(16,
-                pl_module.cfg.train.noise_dim, 1, 1).to(pl_module.device)
+                pl_module.cfg.model.noise_dim, 1, 1).to(pl_module.device)
         fake = pl_module.generator(noise)
         rows = fake[:4], fake[4:8], fake[8:12], fake[12:16]
         return rows
@@ -129,9 +129,9 @@ class Interpolation(AnimationGrid):
     def draw(self, pl_module):
         n_frames = 40
         z1 = torch.randn(16,
-                pl_module.cfg.train.noise_dim, 1, 1).to(pl_module.device)
+                pl_module.cfg.model.noise_dim, 1, 1).to(pl_module.device)
         z2 = torch.randn(16,
-                pl_module.cfg.train.noise_dim, 1, 1).to(pl_module.device)
+                pl_module.cfg.model.noise_dim, 1, 1).to(pl_module.device)
         ts = np.linspace(0, 1, n_frames)
         
         frame_list = []

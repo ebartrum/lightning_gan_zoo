@@ -25,7 +25,7 @@ class BaseGAN(pl.LightningModule):
                 [0.5 for _ in range(cfg.train.channels_img)])])
         self.criterion = nn.BCELoss()
         self.noise_distn = instantiate(cfg.model.noise_distn)
-        self.fixed_noise = self.noise_distn.sample((8, cfg.train.noise_dim, 1, 1))
+        self.fixed_noise = self.noise_distn.sample((8, cfg.model.noise_dim, 1, 1))
         self.discriminator.apply(init_weights)
         self.generator.apply(init_weights)
         if cfg.debug.verbose_shape:
@@ -85,7 +85,7 @@ class DCGAN(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
-                self.cfg.train.noise_dim, 1, 1)).to(self.device)
+                self.cfg.model.noise_dim, 1, 1)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -111,7 +111,7 @@ class GANStabilityR1(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
-                self.cfg.train.noise_dim, 1, 1)).to(self.device)
+                self.cfg.model.noise_dim, 1, 1)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -143,7 +143,7 @@ class WGAN(BaseGAN):
 
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
-                self.cfg.train.noise_dim, 1, 1)).to(self.device)
+                self.cfg.model.noise_dim, 1, 1)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -165,7 +165,7 @@ class WGANGP(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
-                self.cfg.train.noise_dim, 1, 1)).to(self.device)
+                self.cfg.model.noise_dim, 1, 1)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -190,7 +190,7 @@ class HOLOGAN(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
-                self.cfg.train.noise_dim, 1, 1)).to(self.device)
+                self.cfg.model.noise_dim, 1, 1)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
