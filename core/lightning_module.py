@@ -8,6 +8,8 @@ from core.utils.utils import gradient_penalty, compute_grad2
 from core.utils.utils import init_weights, VerboseShapeExecution
 from hydra.utils import instantiate, call
 from abc import abstractmethod
+import numpy as np
+import math
 
 class BaseGAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
@@ -185,12 +187,14 @@ class WGANGP(BaseGAN):
             return loss_gen
 
 class HOLOGAN(BaseGAN):
+    def __init__(self, cfg, logging_dir):
+        super().__init__(cfg, logging_dir)
+        self.fixed_noise = self.noise_distn.sample((8, cfg.model.noise_dim))
+
     def training_step(self, batch, batch_idx, optimizer_idx):
-        # import ipdb;ipdb.set_trace()
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
-                self.cfg.model.noise_dim, 1, 1)).to(self.device)
-        # view_in = self.generator.sample_view()
+                self.cfg.model.noise_dim)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator

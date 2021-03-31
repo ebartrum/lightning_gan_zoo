@@ -27,9 +27,24 @@ discriminator:
   z_planes: "${model.noise_dim}"
 generator:
   _target_: core.models.hologan_generator.Generator
-  channels_noise: "${model.noise_dim}"
-  channels_img: "${train.channels_img}"
-  features_g: "${train.features_gen}"
+  in_planes: 64
+  out_planes: "${train.channels_img}"
+  z_planes: "${model.noise_dim}"
+  gpu: True
+  view_args:
+    elevation_low: 70
+    elevation_high: 110
+    azimuth_low: 220
+    azimuth_high: 320
+    scale_low: 1
+    scale_high: 1
+    transX_low: 0
+    transX_high: 0
+    transY_low: 0
+    transY_high: 0
+    transZ_low: 0
+    transZ_high: 0
+    batch_size: "${train.batch_size}"
 defaults:
   - /figures@figures.sample_grid: sample_grid
   - /figures@figures.interpolation: interpolation
