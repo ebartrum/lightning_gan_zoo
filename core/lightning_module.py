@@ -26,8 +26,8 @@ class BaseGAN(pl.LightningModule):
         self.criterion = instantiate(cfg.train.criterion)
         self.noise_distn = instantiate(cfg.model.noise_distn)
         self.fixed_noise = self.noise_distn.sample((8, cfg.model.noise_dim, 1, 1))
-        self.discriminator.apply(init_weights)
-        self.generator.apply(init_weights)
+        # self.discriminator.apply(init_weights)
+        # self.generator.apply(init_weights)
         if cfg.debug.verbose_shape:
             self.apply(VerboseShapeExecution)
 
