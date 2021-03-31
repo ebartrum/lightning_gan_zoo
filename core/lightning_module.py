@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 import torch
-from torch import nn, optim
+from torch import nn, optim, distributions
 import torchvision
 from torchvision import transforms
 from torch.utils.data import DataLoader
@@ -24,7 +24,8 @@ class BaseGAN(pl.LightningModule):
                 [0.5 for _ in range(cfg.train.channels_img)],
                 [0.5 for _ in range(cfg.train.channels_img)])])
         self.criterion = nn.BCELoss()
-        self.fixed_noise = torch.randn(8, cfg.train.noise_dim, 1, 1)
+        self.noise_distn = distributions.normal.Normal(0,1)
+        self.fixed_noise = self.noise_distn.sample((8, cfg.train.noise_dim, 1, 1))
         self.discriminator.apply(init_weights)
         self.generator.apply(init_weights)
         if cfg.debug.verbose_shape:
@@ -83,8 +84,8 @@ class BaseGAN(pl.LightningModule):
 class DCGAN(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
-        noise = torch.randn(len(real),
-                self.cfg.train.noise_dim, 1, 1).to(self.device)
+        noise = self.noise_distn.sample((len(real),
+                self.cfg.train.noise_dim, 1, 1)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -109,8 +110,8 @@ class DCGAN(BaseGAN):
 class GANStabilityR1(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
-        noise = torch.randn(len(real),
-                self.cfg.train.noise_dim, 1, 1).to(self.device)
+        noise = self.noise_distn.sample((len(real),
+                self.cfg.train.noise_dim, 1, 1)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -141,8 +142,8 @@ class WGAN(BaseGAN):
                     self.cfg.train.weight_clip)
 
         real, _ = batch
-        noise = torch.randn(len(real),
-                self.cfg.train.noise_dim, 1, 1).to(self.device)
+        noise = self.noise_distn.sample((len(real),
+                self.cfg.train.noise_dim, 1, 1)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -163,8 +164,8 @@ class WGAN(BaseGAN):
 class WGANGP(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
-        noise = torch.randn(len(real),
-                self.cfg.train.noise_dim, 1, 1).to(self.device)
+        noise = self.noise_distn.sample((len(real),
+                self.cfg.train.noise_dim, 1, 1)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -182,5 +183,31 @@ class WGANGP(BaseGAN):
         if optimizer_idx == 1:
             gen_fake = self.discriminator(fake).reshape(-1)
             loss_gen = -torch.mean(gen_fake)
+            self.log('train/g_loss', loss_gen)
+            return loss_gen
+
+class HOLOGAN(BaseGAN):
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        real, _ = batch
+        noise = self.noise_distn.sample((len(real),
+                self.cfg.train.noise_dim, 1, 1)).to(self.device)
+        fake = self.generator(noise)
+
+        # train discriminator
+        if optimizer_idx == 0:
+            disc_real = self.discriminator(real).reshape(-1)
+            loss_disc_real = self.criterion(disc_real,
+                    torch.ones_like(disc_real))
+            disc_fake = self.discriminator(fake.detach()).reshape(-1)
+            loss_disc_fake = self.criterion(disc_fake,
+                    torch.zeros_like(disc_fake))
+            loss_disc = (loss_disc_real + loss_disc_fake) / 2
+            self.log('train/d_loss', loss_disc)
+            return loss_disc
+
+        # train generator
+        if optimizer_idx == 1:
+            output = self.discriminator(fake).reshape(-1)
+            loss_gen = self.criterion(output, torch.ones_like(output))
             self.log('train/g_loss', loss_gen)
             return loss_gen
