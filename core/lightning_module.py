@@ -4,8 +4,8 @@ from torch import nn, optim, distributions
 import torchvision
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from core.utils import gradient_penalty, compute_grad2
-from core.utils import init_weights, VerboseShapeExecution
+from core.utils.utils import gradient_penalty, compute_grad2
+from core.utils.utils import init_weights, VerboseShapeExecution
 from hydra.utils import instantiate, call
 from abc import abstractmethod
 
@@ -56,9 +56,9 @@ class BaseGAN(pl.LightningModule):
         opt_gen = instantiate(self.cfg.optimiser,
                     self.generator.parameters())
         scheduler_disc = instantiate(self.cfg.optimisation.lr_scheduler,
-                opt_disc)
+                optimizer=opt_disc)
         scheduler_gen = instantiate(self.cfg.optimisation.lr_scheduler,
-                opt_gen)
+                optimizer=opt_gen)
         return ({'optimizer': opt_disc, 'lr_scheduler': scheduler_disc,
                     'frequency': self.cfg.optimisation.disc_freq},
                {'optimizer': opt_gen, 'lr_scheduler': scheduler_gen,

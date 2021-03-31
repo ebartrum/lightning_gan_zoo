@@ -9,7 +9,7 @@ from itertools import product
 import imageio
 from pytorch_lightning.callbacks import Callback
 from PIL import Image
-from core.utils import interpolate_sphere
+from core.utils.utils import interpolate_sphere
 from copy import deepcopy
 
 class Figure(Callback):

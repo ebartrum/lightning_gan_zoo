@@ -1,0 +1,2 @@
+_target_: core.utils.hologan.create_hologan_lr_scheduler
+total_epochs: "${train.num_epochs}"
