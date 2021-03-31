@@ -8,6 +8,8 @@ model:
 train:
   img_size: 64
   num_epochs: 25
+  criterion:
+    _target_: torch.nn.BCEWithLogitsLoss
 optimisation:
   lr: 1e-4
   disc_freq: 1

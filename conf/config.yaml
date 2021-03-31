@@ -15,6 +15,8 @@ train:
   features_disc: 64
   features_gen: 64
   ckpt_dir:
+  criterion:
+    _target_: torch.nn.BCELoss
 optimisation:
   lr: MISSING
   disc_freq: 1

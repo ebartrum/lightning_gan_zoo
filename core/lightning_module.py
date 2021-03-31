@@ -23,8 +23,7 @@ class BaseGAN(pl.LightningModule):
             transforms.Normalize(
                 [0.5 for _ in range(cfg.train.channels_img)],
                 [0.5 for _ in range(cfg.train.channels_img)])])
-        self.criterion = nn.BCEWithLogitsLoss()
-        # self.criterion = nn.BCELoss()
+        self.criterion = instantiate(cfg.train.criterion)
         self.noise_distn = instantiate(cfg.model.noise_distn)
         self.fixed_noise = self.noise_distn.sample((8, cfg.model.noise_dim, 1, 1))
         self.discriminator.apply(init_weights)
