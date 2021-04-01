@@ -189,25 +189,29 @@ class WGANGP(BaseGAN):
 class HOLOGAN(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
-        noise = self.noise_distn.sample((len(real),
+        z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
-        fake = self.generator(noise)
+        fake = self.generator(z)
 
         # train discriminator
         if optimizer_idx == 0:
             disc_real, _ = self.discriminator(real)
             loss_disc_real = self.criterion(disc_real,
                     torch.ones_like(disc_real))
-            disc_fake, _ = self.discriminator(fake.detach())
+            disc_fake, d_z_pred = self.discriminator(fake.detach())
             loss_disc_fake = self.criterion(disc_fake,
                     torch.zeros_like(disc_fake))
             loss_disc = (loss_disc_real + loss_disc_fake) / 2
+            q_loss = torch.mean((d_z_pred - z)**2)
             self.log('train/d_loss', loss_disc)
-            return loss_disc
+            self.log('train/q_loss', q_loss)
+            return loss_disc + q_loss
 
         # train generator
         if optimizer_idx == 1:
-            output, _ = self.discriminator(fake)
+            output, d_z_pred = self.discriminator(fake)
             loss_gen = self.criterion(output, torch.ones_like(output))
+            q_loss = torch.mean((d_z_pred - z)**2)
             self.log('train/g_loss', loss_gen)
-            return loss_gen
+            self.log('train/q_loss', q_loss)
+            return loss_gen + q_loss
