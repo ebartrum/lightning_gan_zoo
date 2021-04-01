@@ -57,8 +57,9 @@ class Figure(Callback):
             self.draw_and_save(pl_module)
 
 class AnimationFigure(Figure):
-    def __init__(self, cfg, parent_dir, monitor=None):
+    def __init__(self, cfg, parent_dir, monitor=None, n_frames=40):
        super(AnimationFigure, self).__init__(cfg, parent_dir, monitor)
+       self.n_frames = n_frames
        self.filename = cfg.filename if cfg.filename else\
                f"{self.__class__.__name__}.gif"
 
@@ -181,12 +182,11 @@ class Interpolation(AnimationGrid):
         super(Interpolation, self).__init__(cfg, parent_dir, monitor)
 
     def draw(self, pl_module):
-        n_frames = 40
         z1 = pl_module.noise_distn.sample((16, pl_module.cfg.model.noise_dim)
                 ).to(pl_module.device)
         z2 = pl_module.noise_distn.sample((16, pl_module.cfg.model.noise_dim)
                 ).to(pl_module.device)
-        ts = np.linspace(0, 1, n_frames)
+        ts = np.linspace(0, 1, self.n_frames)
         
         frame_list = []
         for t in ts: 
@@ -199,5 +199,33 @@ class Interpolation(AnimationGrid):
 
     def create_rows(self, pl_module, z):
         samples = pl_module.generator(z)
+        rows = samples[:4], samples[4:8], samples[8:12], samples[12:16]
+        return rows
+
+class ElevationGif(AnimationGrid):
+    def __init__(self, cfg, parent_dir, num_objs=16, monitor=None):
+        super(ElevationGif, self).__init__(cfg, parent_dir, monitor)
+        self.num_objs = num_objs
+
+    def draw(self, pl_module):
+        z = pl_module.noise_distn.sample((self.num_objs, pl_module.cfg.model.noise_dim)
+                ).to(pl_module.device)
+        elevation_low = pl_module.cfg.generator.view_args.elevation_low
+        elevation_high = pl_module.cfg.generator.view_args.elevation_high
+
+        
+        frame_list = []
+        for i in torch.linspace(elevation_low, elevation_high, self.n_frames):
+            view_in = torch.tensor(
+                    [270*math.pi/180, i*math.pi/180, 1.0, 0, 0, 0])
+            view_in = view_in.repeat(self.num_objs, 1).to(pl_module.device)
+            rows = self.create_rows(pl_module, z, view_in)
+            grid = self.make_grid(rows)
+            frame_list.append(grid)
+        frame_list.extend(frame_list[::-1]) #forwards then backwards
+        return frame_list
+
+    def create_rows(self, pl_module, z, view_in):
+        samples = pl_module.generator(z, view_in=view_in)
         rows = samples[:4], samples[4:8], samples[8:12], samples[12:16]
         return rows
