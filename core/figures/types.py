@@ -124,43 +124,47 @@ class SampleGrid(Grid):
         return rows
 
 class AzimuthStep(Grid):
-    def __init__(self, cfg, parent_dir, monitor=None, ncol=4, n_steps=8):
-        super(AzimuthStep, self).__init__(cfg, parent_dir, monitor, ncol)
+    def __init__(self, cfg, parent_dir, monitor=None, n_steps=8, n_objs=4):
+        super(AzimuthStep, self).__init__(cfg, parent_dir, monitor, ncol=n_steps)
         self.n_steps = n_steps
+        self.n_objs = n_objs
 
     @torch.no_grad()
     def create_rows(self, pl_module):
-        z = pl_module.noise_distn.sample((self.ncol, pl_module.cfg.model.noise_dim)
+        z = pl_module.noise_distn.sample((self.n_objs, pl_module.cfg.model.noise_dim)
                 ).to(pl_module.device)
 
         azimuth_low = pl_module.cfg.generator.view_args.azimuth_low
         azimuth_high = pl_module.cfg.generator.view_args.azimuth_high
 
-        rows = []
-        for i in range(azimuth_low, azimuth_high, self.n_steps):
+        columns = []
+        for i in torch.linspace(azimuth_low, azimuth_high, self.n_steps):
             view_in = torch.tensor([i*math.pi/180, 0, 1.0, 0, 0, 0])
-            view_in = view_in.repeat(self.ncol, 1)
-            rows.append(pl_module.generator(z, view_in=view_in))
+            view_in = view_in.repeat(self.n_objs, 1)
+            columns.append(pl_module.generator(z, view_in=view_in))
+        rows = torch.stack(columns).permute(1,0,2,3,4)
         return rows
 
 class ElevationStep(Grid):
-    def __init__(self, cfg, parent_dir, monitor=None, ncol=4, n_steps=8):
-        super(ElevationStep, self).__init__(cfg, parent_dir, monitor, ncol)
+    def __init__(self, cfg, parent_dir, monitor=None, n_steps=8, n_objs=4):
+        super(ElevationStep, self).__init__(cfg, parent_dir, monitor, ncol=n_steps)
         self.n_steps = n_steps
+        self.n_objs = n_objs
 
     @torch.no_grad()
     def create_rows(self, pl_module):
-        z = pl_module.noise_distn.sample((self.ncol, pl_module.cfg.model.noise_dim)
+        z = pl_module.noise_distn.sample((self.n_objs, pl_module.cfg.model.noise_dim)
                 ).to(pl_module.device)
 
         elevation_low = pl_module.cfg.generator.view_args.elevation_low
         elevation_high = pl_module.cfg.generator.view_args.elevation_high
 
-        rows = []
-        for i in range(elevation_low, elevation_high, self.n_steps):
-            view_in = torch.tensor([i*math.pi/180, 0, 1.0, 0, 0, 0])
-            view_in = view_in.repeat(self.ncol, 1)
-            rows.append(pl_module.generator(z, view_in=view_in))
+        columns = []
+        for i in torch.linspace(elevation_low, elevation_high, self.n_steps):
+            view_in = torch.tensor([270*math.pi/180, i*math.pi/180, 1.0, 0, 0, 0])
+            view_in = view_in.repeat(self.n_objs, 1)
+            columns.append(pl_module.generator(z, view_in=view_in))
+        rows = torch.stack(columns).permute(1,0,2,3,4)
         return rows
 
 class Interpolation(AnimationGrid):
