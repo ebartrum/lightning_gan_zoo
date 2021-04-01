@@ -27,7 +27,7 @@ class BaseGAN(pl.LightningModule):
                 [0.5 for _ in range(cfg.train.channels_img)])])
         self.criterion = instantiate(cfg.train.criterion)
         self.noise_distn = instantiate(cfg.model.noise_distn)
-        self.fixed_noise = self.noise_distn.sample((8, cfg.model.noise_dim, 1, 1))
+        self.fixed_noise = self.noise_distn.sample((8, cfg.model.noise_dim))
         # self.discriminator.apply(init_weights)
         # self.generator.apply(init_weights)
         if cfg.debug.verbose_shape:
@@ -84,8 +84,8 @@ class BaseGAN(pl.LightningModule):
 class DCGAN(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
-        noise = self.noise_distn.sample((len(real),
-                self.cfg.model.noise_dim, 1, 1)).to(self.device)
+        noise = self.noise_distn.sample((len(real),self.cfg.model.noise_dim)
+                ).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -111,7 +111,7 @@ class GANStabilityR1(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
-                self.cfg.model.noise_dim, 1, 1)).to(self.device)
+                self.cfg.model.noise_dim)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -143,7 +143,7 @@ class WGAN(BaseGAN):
 
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
-                self.cfg.model.noise_dim, 1, 1)).to(self.device)
+                self.cfg.model.noise_dim)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -165,7 +165,7 @@ class WGANGP(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
-                self.cfg.model.noise_dim, 1, 1)).to(self.device)
+                self.cfg.model.noise_dim)).to(self.device)
         fake = self.generator(noise)
 
         # train discriminator
@@ -187,10 +187,6 @@ class WGANGP(BaseGAN):
             return loss_gen
 
 class HOLOGAN(BaseGAN):
-    def __init__(self, cfg, logging_dir):
-        super().__init__(cfg, logging_dir)
-        self.fixed_noise = self.noise_distn.sample((8, cfg.model.noise_dim))
-
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
         noise = self.noise_distn.sample((len(real),
