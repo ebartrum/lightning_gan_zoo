@@ -37,7 +37,7 @@ def calculate_inception_statistics_on_paths(paths, batch_size, device, dims):
     return m1, s1, m2, s2
 
 class FIDCallback(pl.callbacks.base.Callback):
-    def __init__(self, real_img_dir, fake_img_dir, fid_name, cfg,
+    def __init__(self, model, real_img_dir, fake_img_dir, fid_name,
             data_transform=None, n_samples=5000, batch_size=16):
         self.real_img_dir = real_img_dir
         if not os.path.exists(fake_img_dir):
@@ -53,9 +53,9 @@ class FIDCallback(pl.callbacks.base.Callback):
         self.n_samples = n_samples
         self.batch_size = batch_size
         self.fid_name = fid_name
-        self.cfg = cfg
+        self.cfg = model.cfg
         self.z_samples = torch.split(
-                torch.randn(n_samples, self.cfg.model.noise_dim,1,1),
+                model.noise_distn.sample((n_samples, self.cfg.model.noise_dim)),
                 batch_size)
 
     def clear_fake_img_dir(self):
