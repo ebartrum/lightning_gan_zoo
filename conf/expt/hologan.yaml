@@ -50,6 +50,8 @@ generator:
 defaults:
   - /figures@figures.sample_grid: sample_grid
   - /figures@figures.interpolation: interpolation
+  - /figures@figures.azimuth_step: azimuth_step
+  - /figures@figures.elevation_step: elevation_step
   - override /noise_distn: uniform
   - override /lr_scheduler: hologan
   - override /dataset: mnist

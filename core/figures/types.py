@@ -11,6 +11,7 @@ from pytorch_lightning.callbacks import Callback
 from PIL import Image
 from core.utils.utils import interpolate_sphere
 from copy import deepcopy
+import math
 
 class Figure(Callback):
     def __init__(self, cfg, parent_dir, monitor=None):
@@ -120,6 +121,46 @@ class SampleGrid(Grid):
                 ).to(pl_module.device)
         fake = pl_module.generator(noise)
         rows = fake[:4], fake[4:8], fake[8:12], fake[12:16]
+        return rows
+
+class AzimuthStep(Grid):
+    def __init__(self, cfg, parent_dir, monitor=None, ncol=4, n_steps=8):
+        super(AzimuthStep, self).__init__(cfg, parent_dir, monitor, ncol)
+        self.n_steps = n_steps
+
+    @torch.no_grad()
+    def create_rows(self, pl_module):
+        z = pl_module.noise_distn.sample((self.ncol, pl_module.cfg.model.noise_dim)
+                ).to(pl_module.device)
+
+        azimuth_low = pl_module.cfg.generator.view_args.azimuth_low
+        azimuth_high = pl_module.cfg.generator.view_args.azimuth_high
+
+        rows = []
+        for i in range(azimuth_low, azimuth_high, self.n_steps):
+            view_in = torch.tensor([i*math.pi/180, 0, 1.0, 0, 0, 0])
+            view_in = view_in.repeat(self.ncol, 1)
+            rows.append(pl_module.generator(z, view_in=view_in))
+        return rows
+
+class ElevationStep(Grid):
+    def __init__(self, cfg, parent_dir, monitor=None, ncol=4, n_steps=8):
+        super(ElevationStep, self).__init__(cfg, parent_dir, monitor, ncol)
+        self.n_steps = n_steps
+
+    @torch.no_grad()
+    def create_rows(self, pl_module):
+        z = pl_module.noise_distn.sample((self.ncol, pl_module.cfg.model.noise_dim)
+                ).to(pl_module.device)
+
+        elevation_low = pl_module.cfg.generator.view_args.elevation_low
+        elevation_high = pl_module.cfg.generator.view_args.elevation_high
+
+        rows = []
+        for i in range(elevation_low, elevation_high, self.n_steps):
+            view_in = torch.tensor([i*math.pi/180, 0, 1.0, 0, 0, 0])
+            view_in = view_in.repeat(self.ncol, 1)
+            rows.append(pl_module.generator(z, view_in=view_in))
         return rows
 
 class Interpolation(AnimationGrid):
