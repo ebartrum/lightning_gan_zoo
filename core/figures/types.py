@@ -146,7 +146,7 @@ class AzimuthStep(Grid):
 
         azimuth_low = pl_module.cfg.generator.view_args.azimuth_low
         azimuth_high = pl_module.cfg.generator.view_args.azimuth_high
-        fixed_elevation = (pl_module.cfg.generator.view_args.elevation_high -
+        fixed_elevation = (pl_module.cfg.generator.view_args.elevation_high +
                 pl_module.cfg.generator.view_args.elevation_low)/2
 
         columns = []
@@ -171,7 +171,7 @@ class ElevationStep(Grid):
 
         elevation_low = pl_module.cfg.generator.view_args.elevation_low
         elevation_high = pl_module.cfg.generator.view_args.elevation_high
-        fixed_azimuth = (pl_module.cfg.generator.view_args.azimuth_high -
+        fixed_azimuth = (pl_module.cfg.generator.view_args.azimuth_high +
                 pl_module.cfg.generator.view_args.azimuth_low)/2
 
         columns = []
@@ -217,7 +217,7 @@ class ElevationGif(AnimationGrid):
                 ).to(pl_module.device)
         elevation_low = pl_module.cfg.generator.view_args.elevation_low
         elevation_high = pl_module.cfg.generator.view_args.elevation_high
-        fixed_azimuth = (pl_module.cfg.generator.view_args.azimuth_high -
+        fixed_azimuth = (pl_module.cfg.generator.view_args.azimuth_high +
                 pl_module.cfg.generator.view_args.azimuth_low)/2
         
         frame_list = []
