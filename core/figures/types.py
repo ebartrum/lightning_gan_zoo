@@ -235,3 +235,32 @@ class ElevationGif(AnimationGrid):
         samples = pl_module.generator(z, view_in=view_in)
         rows = samples[:4], samples[4:8], samples[8:12], samples[12:16]
         return rows
+
+class AzimuthGif(AnimationGrid):
+    def __init__(self, cfg, parent_dir, num_objs=16, monitor=None):
+        super(AzimuthGif, self).__init__(cfg, parent_dir, monitor)
+        self.num_objs = num_objs
+
+    def draw(self, pl_module):
+        z = pl_module.noise_distn.sample((self.num_objs, pl_module.cfg.model.noise_dim)
+                ).to(pl_module.device)
+        azimuth_low = pl_module.cfg.generator.view_args.azimuth_low
+        azimuth_high = pl_module.cfg.generator.view_args.azimuth_high
+        fixed_elevation = (pl_module.cfg.generator.view_args.elevation_high +
+                pl_module.cfg.generator.view_args.elevation_low)/2
+        
+        frame_list = []
+        for i in torch.linspace(azimuth_low, azimuth_high, self.n_frames):
+            view_in = torch.tensor(
+                    [i*math.pi/180, fixed_elevation*math.pi/180, 1.0, 0, 0, 0])
+            view_in = view_in.repeat(self.num_objs, 1).to(pl_module.device)
+            rows = self.create_rows(pl_module, z, view_in)
+            grid = self.make_grid(rows)
+            frame_list.append(grid)
+        frame_list.extend(frame_list[::-1]) #forwards then backwards
+        return frame_list
+
+    def create_rows(self, pl_module, z, view_in):
+        samples = pl_module.generator(z, view_in=view_in)
+        rows = samples[:4], samples[4:8], samples[8:12], samples[12:16]
+        return rows

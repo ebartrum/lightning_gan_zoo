@@ -52,6 +52,7 @@ defaults:
   - /figures@figures.interpolation: interpolation
   - /figures@figures.azimuth_step: azimuth_step
   - /figures@figures.elevation_step: elevation_step
+  - /figures@figures.azimuth_gif: azimuth_gif
   - /figures@figures.elevation_gif: elevation_gif
   - override /noise_distn: uniform
   - override /lr_scheduler: hologan
