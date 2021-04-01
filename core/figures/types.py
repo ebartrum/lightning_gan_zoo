@@ -146,10 +146,13 @@ class AzimuthStep(Grid):
 
         azimuth_low = pl_module.cfg.generator.view_args.azimuth_low
         azimuth_high = pl_module.cfg.generator.view_args.azimuth_high
+        fixed_elevation = (pl_module.cfg.generator.view_args.elevation_high -
+                pl_module.cfg.generator.view_args.elevation_low)/2
 
         columns = []
         for i in torch.linspace(azimuth_low, azimuth_high, self.n_steps):
-            view_in = torch.tensor([i*math.pi/180, 0, 1.0, 0, 0, 0])
+            view_in = torch.tensor([i*math.pi/180, fixed_elevation*math.pi/180,
+                1.0, 0, 0, 0])
             view_in = view_in.repeat(self.n_objs, 1)
             columns.append(pl_module.generator(z, view_in=view_in))
         rows = torch.stack(columns).permute(1,0,2,3,4)
@@ -168,10 +171,12 @@ class ElevationStep(Grid):
 
         elevation_low = pl_module.cfg.generator.view_args.elevation_low
         elevation_high = pl_module.cfg.generator.view_args.elevation_high
+        fixed_azimuth = (pl_module.cfg.generator.view_args.azimuth_high -
+                pl_module.cfg.generator.view_args.azimuth_low)/2
 
         columns = []
         for i in torch.linspace(elevation_low, elevation_high, self.n_steps):
-            view_in = torch.tensor([270*math.pi/180, i*math.pi/180, 1.0, 0, 0, 0])
+            view_in = torch.tensor([fixed_azimuth*math.pi/180, i*math.pi/180, 1.0, 0, 0, 0])
             view_in = view_in.repeat(self.n_objs, 1)
             columns.append(pl_module.generator(z, view_in=view_in))
         rows = torch.stack(columns).permute(1,0,2,3,4)
@@ -212,12 +217,13 @@ class ElevationGif(AnimationGrid):
                 ).to(pl_module.device)
         elevation_low = pl_module.cfg.generator.view_args.elevation_low
         elevation_high = pl_module.cfg.generator.view_args.elevation_high
-
+        fixed_azimuth = (pl_module.cfg.generator.view_args.azimuth_high -
+                pl_module.cfg.generator.view_args.azimuth_low)/2
         
         frame_list = []
         for i in torch.linspace(elevation_low, elevation_high, self.n_frames):
             view_in = torch.tensor(
-                    [270*math.pi/180, i*math.pi/180, 1.0, 0, 0, 0])
+                    [fixed_azimuth*math.pi/180, i*math.pi/180, 1.0, 0, 0, 0])
             view_in = view_in.repeat(self.num_objs, 1).to(pl_module.device)
             rows = self.create_rows(pl_module, z, view_in)
             grid = self.make_grid(rows)
