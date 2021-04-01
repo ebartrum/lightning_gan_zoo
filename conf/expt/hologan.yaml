@@ -6,7 +6,7 @@ model:
     _target_: core.lightning_module.HOLOGAN
   noise_dim: 128
 train:
-  batch_size: 64
+  batch_size: 32
   img_size: 64
   num_epochs: 25
   criterion:
