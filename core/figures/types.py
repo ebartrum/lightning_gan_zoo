@@ -111,6 +111,15 @@ class AnimationGrid(AnimationFigure):
     def draw(self, pl_module):
         pass
 
+    def make_grid(self, rows):
+        grid = torchvision.utils.make_grid(torch.cat(
+            list(rows),dim=0),
+            nrow=self.ncol)
+        grid = grid.permute(1,2,0)
+        grid = torch.clamp(grid, 0, 1)
+        fig_array = grid.detach().cpu().numpy()
+        return fig_array
+
 class SampleGrid(Grid):
     def __init__(self, cfg, parent_dir, monitor=None, ncol=4):
         super(SampleGrid, self).__init__(cfg, parent_dir, monitor, ncol)
@@ -192,12 +201,3 @@ class Interpolation(AnimationGrid):
         samples = pl_module.generator(z)
         rows = samples[:4], samples[4:8], samples[8:12], samples[12:16]
         return rows
-
-    def make_grid(self, rows):
-        grid = torchvision.utils.make_grid(torch.cat(
-            list(rows),dim=0),
-            nrow=self.ncol)
-        grid = grid.permute(1,2,0)
-        grid = torch.clamp(grid, 0, 1)
-        fig_array = grid.detach().cpu().numpy()
-        return fig_array
