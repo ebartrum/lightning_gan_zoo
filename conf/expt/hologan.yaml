@@ -6,6 +6,7 @@ model:
     _target_: core.lightning_module.HOLOGAN
   noise_dim: 128
 train:
+  batch_size: 64
   img_size: 64
   num_epochs: 25
   criterion:
@@ -31,6 +32,7 @@ generator:
   out_planes: "${train.channels_img}"
   z_planes: "${model.noise_dim}"
   gpu: True
+  img_size: "${train.img_size}"
   view_args:
     elevation_low: 70
     elevation_high: 110

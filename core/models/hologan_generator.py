@@ -42,7 +42,8 @@ class BasicBlock(nn.Module):
         return h
 
 class Generator(nn.Module):
-    def __init__(self, in_planes, out_planes, z_planes, view_args, view_planes=6, gpu=True):
+    def __init__(self, in_planes, out_planes, z_planes, view_args, img_size,
+            view_planes=6, gpu=True):
         super(Generator, self).__init__()
         self.device = torch.device("cuda" if gpu else "cpu")
         tensor = (torch.randn(1, in_planes*8, 4, 4, 4) - 0.5 ) / 0.5
@@ -65,41 +66,45 @@ class Generator(nn.Module):
         self.block4 = BasicBlock(z_planes, in_planes=in_planes*4, out_planes=in_planes,
                                  transpose_dim=2)
 
-        self.convTranspose2d2 = nn.ConvTranspose2d(in_planes, out_planes, kernel_size=4, padding=1)
-        nn.init.normal_(self.convTranspose2d2.weight, std=0.02)
-        nn.init.constant_(self.convTranspose2d2.bias, val=0.0)
+        if img_size == 64:
+            self.final_layer = nn.Conv2d(in_planes, out_planes, kernel_size=3, padding=1)
+        elif img_size == 128:
+            self.final_layer = nn.ConvTranspose2d(in_planes, out_planes, kernel_size=4, padding=1)
+
+        nn.init.normal_(self.final_layer.weight, std=0.02)
+        nn.init.constant_(self.final_layer.bias, val=0.0)
 
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
 
-    def sample_view(self):
+    def sample_view(self, batch_size):
         """Transformation parameters sampler
         This samples view (or transformation parameters) from the given configuration.
         """
         args = self.view_args
         # the azimuth angle (theta) is around y
         theta = np.random.randint(args.azimuth_low, args.azimuth_high,
-                                  (args.batch_size)).astype(np.float)
+                                  (batch_size)).astype(np.float)
         theta = theta * math.pi / 180.0
 
         # the elevation angle (gamma) is around x
         if args.elevation_low < args.elevation_high:
             gamma = np.random.randint(args.elevation_low, args.elevation_high,
-                                      (args.batch_size)).astype(np.float)
+                                      (batch_size)).astype(np.float)
             gamma = gamma * math.pi / 180.0
         else:
-            gamma = np.zeros(args.batch_size).astype(np.float)
+            gamma = np.zeros(batch_size).astype(np.float)
 
         scale = float(np.random.uniform(args.scale_low, args.scale_high))
-        shift_x = args.transX_low + np.random.random(args.batch_size) * \
+        shift_x = args.transX_low + np.random.random(batch_size) * \
                   (args.transX_high - args.transX_low)
-        shift_y = args.transY_low + np.random.random(args.batch_size) * \
+        shift_y = args.transY_low + np.random.random(batch_size) * \
                   (args.transY_high - args.transY_low)
-        shift_z = args.transZ_low + np.random.random(args.batch_size) * \
+        shift_z = args.transZ_low + np.random.random(batch_size) * \
                   (args.transZ_high - args.transZ_low)
 
-        view = np.zeros((args.batch_size, 6))
-        column = np.arange(0, args.batch_size)
+        view = np.zeros((batch_size, 6))
+        column = np.arange(0, batch_size)
         view[column, 0] = theta
         view[column, 1] = gamma
         view[column, 2] = scale
@@ -109,10 +114,9 @@ class Generator(nn.Module):
         return view
 
     def forward(self, z, view_in=None):
-        if view_in is None:
-            view_in = self.sample_view()
-
         batch_size = z.shape[0]
+        if view_in is None:
+            view_in = self.sample_view(batch_size)
 
         x = self.x.repeat(batch_size, 1, 1, 1, 1)
         s0, b0 = self.zMapping(z)
@@ -134,7 +138,7 @@ class Generator(nn.Module):
         h4 = self.block3(h3, z)
         h5 = self.block4(h4, z)
 
-        h6 = self.convTranspose2d2(h5)
+        h6 = self.final_layer(h5)
         h6 = self.tanh(h6)
         return h6
 
