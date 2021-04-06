@@ -136,28 +136,6 @@ def _mmd2_and_variance(K_XX, K_XY, K_YY, unit_diagonal=False,
 
     return mmd2, var_est
 
-def calculate_activation_statistics(files, model, batch_size=50, dims=2048,
-                                    device='cpu'):
-    """Calculation of the statistics used by the FID.
-    Params:
-    -- files       : List of image files paths
-    -- model       : Instance of inception model
-    -- batch_size  : The images numpy array is split into batches with
-                     batch size batch_size. A reasonable batch size
-                     depends on the hardware.
-    -- dims        : Dimensionality of features returned by Inception
-    -- device      : Device to run calculations
-    Returns:
-    -- mu    : The mean over samples of the activations of the pool_3 layer of
-               the inception model.
-    -- sigma : The covariance matrix of the activations of the pool_3 layer of
-               the inception model.
-    """
-    act = get_activations(files, model, batch_size, dims, device)
-    mu = np.mean(act, axis=0)
-    sigma = np.cov(act, rowvar=False)
-    return mu, sigma
-
 def compute_activations_of_path(path, model, batch_size, dims, device):
     IMAGE_EXTENSIONS = ['bmp', 'jpg', 'jpeg', 'pgm', 'png', 'ppm',
                     'tif', 'tiff', 'webp']
@@ -165,32 +143,6 @@ def compute_activations_of_path(path, model, batch_size, dims, device):
         glob.iglob(path+'**/**', recursive=True))))
     act = get_activations(files, model, batch_size, dims, device)
     return act
-
-def compute_statistics_of_path(path, model, batch_size, dims, device):
-    IMAGE_EXTENSIONS = ['bmp', 'jpg', 'jpeg', 'pgm', 'png', 'ppm',
-                    'tif', 'tiff', 'webp']
-
-    if path.endswith('.npz'):
-        with np.load(path) as f:
-            m, s = f['mu'][:], f['sigma'][:]
-    else:
-        files = sorted(list(filter(lambda f: f.endswith(tuple(IMAGE_EXTENSIONS)),
-            glob.iglob(path+'**/**', recursive=True))))
-        m, s = calculate_activation_statistics(files, model, batch_size,
-                                               dims, device)
-    return m, s
-
-def calculate_inception_statistics_on_paths(paths, batch_size, device, dims):
-    for p in paths:
-        if not os.path.exists(p):
-            raise RuntimeError('Invalid path: %s' % p)
-    block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
-    model = InceptionV3([block_idx]).to(device)
-    m1, s1 = compute_statistics_of_path(paths[0], model, batch_size,
-                                        dims, device)
-    m2, s2 = compute_statistics_of_path(paths[1], model, batch_size,
-                                        dims, device)
-    return m1, s1, m2, s2
 
 class FIDCallback(pl.callbacks.base.Callback):
     def __init__(self, model, real_img_dir, fake_img_dir, fid_name,
@@ -254,24 +206,9 @@ class FIDCallback(pl.callbacks.base.Callback):
         current_device = pl_module.device
         real_img_path = self.real_statistics_cache\
                 if self.real_statistics_cache else self.real_img_dir
-        # m1, s1, m2, s2 = calculate_inception_statistics_on_paths(
-        #         [real_img_path, self.fake_img_dir],
-        #         batch_size=16,
-        #         device=current_device, dims=2048) 
-
         
         # if self.real_statistics_cache is None:
         #     self.cache_statistics(m1,s1)
-
-        # fid = calculate_frechet_distance(m1, s1, m2, s2)
-        # print(f"fid is {fid}")
-        # log FID
-        # pl_module.log(self.fid_name, fid)
-
-
-
-
-        # def compute_activations_of_path(path, model, batch_size, dims, device):
 
         block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
         model = InceptionV3([block_idx]).to(current_device)
@@ -294,15 +231,9 @@ class FIDCallback(pl.callbacks.base.Callback):
         kid_mean, kid_stddev = kid_values[0].mean(), kid_values[0].std()
         print(f"KID mean: {kid_mean}, KID stddev: {kid_stddev}")
         
-        # log FID
+        # log FID/KID
         pl_module.log(self.fid_name, fid)
-        # log KID
         pl_module.log("kid", kid_mean)
 
-
-
         pl_module.to(current_device)
-
         self.last_global_step = trainer.global_step
-
-
