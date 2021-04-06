@@ -153,7 +153,7 @@ class FIDCallback(pl.callbacks.base.Callback):
 
         cache_files = list(
                 filter(lambda s: ".npz" in s, os.listdir(self.real_img_dir)))
-        self.real_statistics_cache =\
+        self.real_inception_cache =\
                 os.path.join(self.real_img_dir, cache_files[0])\
                 if len(cache_files) else None
 
@@ -174,9 +174,9 @@ class FIDCallback(pl.callbacks.base.Callback):
         if os.path.exists(cached_filepath):
             os.remove(cached_filepath)
 
-    def cache_statistics(self, mu, sigma):
+    def cache_inception(self, mu, sigma, act):
         cache_filename = os.path.join(self.real_img_dir, "inception_cache.npz")
-        np.savez(cache_filename, mu=mu, sigma=sigma)
+        np.savez(cache_filename, mu=mu, sigma=sigma, act=act)
         self.real_statistics_cache = cache_filename
         
     def on_validation_epoch_start(self, trainer, pl_module):
@@ -204,19 +204,24 @@ class FIDCallback(pl.callbacks.base.Callback):
                     imageio.imwrite(f"{self.fake_img_dir}/{filename}", sample)
             
         current_device = pl_module.device
-        real_img_path = self.real_statistics_cache\
-                if self.real_statistics_cache else self.real_img_dir
         
-        # if self.real_statistics_cache is None:
-        #     self.cache_statistics(m1,s1)
 
         block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
         model = InceptionV3([block_idx]).to(current_device)
-        real_act = compute_activations_of_path(
-                path=self.real_img_dir, model=model,
-                batch_size=16, device=current_device, dims=2048)
-        real_mu = np.mean(real_act, axis=0)
-        real_sigma = np.cov(real_act, rowvar=False)
+
+        if self.real_inception_cache:
+            with np.load(self.real_inception_cache) as data:
+                real_mu = data['mu']
+                real_sigma = data['sigma']
+                real_act = data['act']
+            
+        else:
+            real_act = compute_activations_of_path(
+                    path=self.real_img_dir, model=model,
+                    batch_size=16, device=current_device, dims=2048)
+            real_mu = np.mean(real_act, axis=0)
+            real_sigma = np.cov(real_act, rowvar=False)
+            self.cache_inception(real_mu, real_sigma, real_act)
 
         fake_act = compute_activations_of_path(
                 path=self.fake_img_dir, model=model,
@@ -226,12 +231,13 @@ class FIDCallback(pl.callbacks.base.Callback):
 
         fid = calculate_frechet_distance(
                 real_mu, real_sigma, fake_mu, fake_sigma)
-        print(f"FID: {fid}")
+
         kid_values = polynomial_mmd_averages(real_act, fake_act, n_subsets=100)
         kid_mean, kid_stddev = kid_values[0].mean(), kid_values[0].std()
-        print(f"KID mean: {kid_mean}, KID stddev: {kid_stddev}")
         
         # log FID/KID
+        print(f"FID: {fid}")
+        print(f"KID mean: {kid_mean}, KID stddev: {kid_stddev}")
         pl_module.log(self.fid_name, fid)
         pl_module.log("kid", kid_mean)
 
