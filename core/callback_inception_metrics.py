@@ -144,7 +144,7 @@ def compute_activations_of_path(path, model, batch_size, dims, device):
     act = get_activations(files, model, batch_size, dims, device)
     return act
 
-class FIDCallback(pl.callbacks.base.Callback):
+class InceptionMetrics(pl.callbacks.base.Callback):
     def __init__(self, model, real_img_dir, fake_img_dir, fid_name,
             data_transform=None, n_samples=5000, batch_size=16):
         self.real_img_dir = real_img_dir

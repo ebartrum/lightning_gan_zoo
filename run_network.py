@@ -6,7 +6,7 @@ from torch.nn import functional as F
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TestTubeLogger
 from core.models.standard_networks import Discriminator, Generator
-from core.callback_fid import FIDCallback
+from core.callback_inception_metrics import InceptionMetrics
 import hydra
 from hydra.utils import instantiate, call
 from omegaconf import DictConfig
@@ -40,7 +40,7 @@ def train(cfg: DictConfig) -> None:
                 
     callbacks.append(ModelCheckpoint(
             monitor='fid', filename='model_best-{fid:.2f}'))
-    callbacks.append(FIDCallback(model=model, real_img_dir=cfg.dataset.val.root,
+    callbacks.append(InceptionMetrics(model=model, real_img_dir=cfg.dataset.val.root,
             fake_img_dir=os.path.join(logging_dir,"test_samples"),
             data_transform=model.transform, fid_name="fid",
             n_samples=cfg.val.fid_n_samples))
