@@ -49,7 +49,7 @@ generator:
     batch_size: "${train.batch_size}"
 defaults:
   - /figures@figures.sample_grid: sample_grid
-  - /figures@figures.interpolation: interpolation
+  - /figures@figures.interpolation3d: interpolation3d
   - /figures@figures.azimuth_step: azimuth_step
   - /figures@figures.elevation_step: elevation_step
   - /figures@figures.azimuth_gif: azimuth_gif

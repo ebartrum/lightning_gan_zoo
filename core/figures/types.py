@@ -207,6 +207,35 @@ class Interpolation(AnimationGrid):
         rows = samples[:4], samples[4:8], samples[8:12], samples[12:16]
         return rows
 
+class Interpolation3d(AnimationGrid):
+    def __init__(self, cfg, parent_dir, monitor=None):
+        super(Interpolation3d, self).__init__(cfg, parent_dir, monitor)
+
+    def draw(self, pl_module):
+        z1 = pl_module.noise_distn.sample((16, pl_module.cfg.model.noise_dim)
+                ).to(pl_module.device)
+        z2 = pl_module.noise_distn.sample((16, pl_module.cfg.model.noise_dim)
+                ).to(pl_module.device)
+        p1 = pl_module.generator.sample_view(16)
+        p2 = pl_module.generator.sample_view(16)
+        
+        ts = np.linspace(0, 1, self.n_frames)
+        
+        frame_list = []
+        for t in ts: 
+            z = interpolate_sphere(z1, z2, float(t))
+            p = p2*t + p1*(1-t)
+            rows = self.create_rows(pl_module, z, p)
+            grid = self.make_grid(rows)
+            frame_list.append(grid)
+        frame_list.extend(frame_list[::-1]) #forwards then backwards
+        return frame_list
+
+    def create_rows(self, pl_module, z, p):
+        samples = pl_module.generator(z, view_in=p)
+        rows = samples[:4], samples[4:8], samples[8:12], samples[12:16]
+        return rows
+
 class ElevationGif(AnimationGrid):
     def __init__(self, cfg, parent_dir, num_objs=16, monitor=None):
         super(ElevationGif, self).__init__(cfg, parent_dir, monitor)
