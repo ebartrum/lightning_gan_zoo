@@ -1,5 +1,5 @@
 # Lightning GAN Zoo :zap: :elephant: :penguin: :panda_face:
-GAN models (including 3D controllable models) implemented with pytorch lightning and hydra configuration.
+GAN models (including 3D controllable models) implemented with [Pytorch Lightning](https://www.pytorchlightning.ai/) and [Hydra](https://hydra.cc/) configuration.
 This is an unofficial project and work in progress. **Model correctness is not guaranteed.**
 
 Usage examples:<br/>
