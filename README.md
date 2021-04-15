@@ -1,5 +1,6 @@
 # Lightning GAN Zoo :zap: :elephant: :penguin: :panda_face:
-GAN models (including 3D controllable models) implemented with pytorch lightning and hydra configuration (work in progress)
+GAN models (including 3D controllable models) implemented with pytorch lightning and hydra configuration.
+This is an unofficial project and work in progress. **Model correctness is not guaranteed.**
 
 Usage examples:<br/>
 ```python train.py +expt=dc_gan dataset=celeb_a```<br/>
@@ -12,9 +13,9 @@ By default, the **FID** score will be monitored on the validation set during the
 Generator samples and latent space interpolations are saved to the output directory. Varying view outputs saved for 3D controllable models.
 
 ### Models currently supported
-- DCGAN
-- WGAN
-- WGAN-GP
+- [DCGAN](https://arxiv.org/abs/1511.06434v2)
+- [WGAN](https://arxiv.org/abs/1701.07875v3)
+- [WGAN-GP](https://arxiv.org/abs/1704.00028v3)
 - [R1 Regularisation GAN](https://github.com/LMescheder/GAN_stability)
 - [HOLOGAN](https://www.monkeyoverflow.com/hologan-unsupervised-learning-of-3d-representations-from-natural-images/)
 
