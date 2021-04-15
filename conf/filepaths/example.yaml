@@ -1,0 +1,3 @@
+#Copy this file to conf/filepaths/local.yaml and edit appropriately
+celeb_a_root: /path/to/celeb_a_root
+mnist_parent_directory: /path/to/mnist_parent_directory
