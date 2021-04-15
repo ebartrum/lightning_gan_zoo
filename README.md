@@ -23,4 +23,5 @@ Edit conf/filepaths/local.yaml with dataset locations on your system
 
 ### Example outputs
 #### DCGAN:
-![GitHub Logo](/examples/dc_gan.png)
+![DCGAN output](/examples/dc_gan.png)
+![DCGAN interpolation](/examples/dc_gan_interpolation.gif)
