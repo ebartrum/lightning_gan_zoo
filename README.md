@@ -20,3 +20,7 @@ Generator samples and latent space interpolations are saved to the output direct
 ```cp conf/filepaths/example.yaml conf/filepaths/local.yaml```
 
 Edit conf/filepaths/local.yaml with dataset locations on your system
+
+### Example outputs
+#### DCGAN:
+![GitHub Logo](/examples/dc_gan.png)
