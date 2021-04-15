@@ -17,7 +17,7 @@ Generator samples and latent space interpolations are saved to the output direct
 - [WGAN](https://arxiv.org/abs/1701.07875v3)
 - [WGAN-GP](https://arxiv.org/abs/1704.00028v3)
 - [R1 Regularisation GAN](https://github.com/LMescheder/GAN_stability)
-- [HOLOGAN](https://www.monkeyoverflow.com/hologan-unsupervised-learning-of-3d-representations-from-natural-images/)
+- [HoloGAN](https://www.monkeyoverflow.com/hologan-unsupervised-learning-of-3d-representations-from-natural-images/)
 
 ### How to specify filepaths
 ```cp conf/filepaths/example.yaml conf/filepaths/local.yaml```
