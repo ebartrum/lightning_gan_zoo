@@ -15,3 +15,8 @@ Generator samples and latent space interpolations are saved to the output direct
 - WGAN
 - WGAN-GP
 - R1 Regularisation GAN from https://github.com/LMescheder/GAN_stability 
+
+### How to specify filepaths
+```cp conf/filepaths/example.yaml conf/filepaths/local.yaml```
+
+Edit conf/filepaths/local.yaml with dataset locations on your system
