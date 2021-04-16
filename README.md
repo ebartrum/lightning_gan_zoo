@@ -32,3 +32,9 @@ Edit conf/filepaths/local.yaml with dataset locations on your system
 #### HoloGAN (3D controllable):
 ![HoloGAN output](/examples/hologan.png)
 ![HoloGAN azimuth control](/examples/hologan_azimuth.gif)
+
+### Setup Environment
+Conda environment yaml file coming soon.
+Install pytorch and pytorch lightning
+Install required hydra version using
+``` pip install hydra-core==1.1.0dev3 ```
