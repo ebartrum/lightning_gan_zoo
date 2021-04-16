@@ -1,6 +1,6 @@
 # @package _global_
 name: MISSING
-version: "${submission_details.version}"
+version:
 model:
   lm:
     _target_: core.lightning_module.BaseGAN
@@ -45,7 +45,6 @@ hydra:
 defaults:
  - dataset: MISSING
  - filepaths: local
- - submission_details: local
  - noise_distn: normal
  - lr_scheduler: step_lr
  - override hydra/job_logging: disabled

@@ -24,8 +24,14 @@ def find_ckpt(ckpt_dir):
 @hydra.main(config_path="conf", config_name="config")
 def train(cfg: DictConfig) -> None:
     seed_everything(42)
-    version = int(submitit.JobEnvironment().job_id) if cfg.version=="$slurm_job_id"\
-            else cfg.version
+    try:
+        cluster_job_id = int(submitit.JobEnvironment().job_id)
+    except RuntimeError:
+        cluster_job_id = None
+    if cfg.version is None:
+        version = cluster_job_id
+    else:
+        version = cfg.version
     tb_logger = TestTubeLogger('output/',
             name=cfg.name, version=version)
 
