@@ -215,3 +215,29 @@ class HOLOGAN(BaseGAN):
             self.log('train/g_loss', loss_gen)
             self.log('train/q_loss', q_loss)
             return loss_gen + q_loss
+
+class PIGAN(BaseGAN):
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        real, _ = batch
+        z = self.noise_distn.sample((len(real),
+                self.cfg.model.noise_dim)).to(self.device)
+        fake = self.generator(z)
+
+        # train discriminator
+        if optimizer_idx == 0:
+            disc_real = self.discriminator(real).reshape(-1)
+            loss_disc_real = self.criterion(disc_real,
+                    torch.ones_like(disc_real))
+            disc_fake = self.discriminator(fake.detach()).reshape(-1)
+            loss_disc_fake = self.criterion(disc_fake,
+                    torch.zeros_like(disc_fake))
+            loss_disc = (loss_disc_real + loss_disc_fake) / 2
+            self.log('train/d_loss', loss_disc)
+            return loss_disc
+
+        # train generator
+        if optimizer_idx == 1:
+            output = self.discriminator(fake).reshape(-1)
+            loss_gen = self.criterion(output, torch.ones_like(output))
+            self.log('train/g_loss', loss_gen)
+            return loss_gen
