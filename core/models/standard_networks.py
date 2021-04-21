@@ -3,30 +3,33 @@ Discriminator and Generator implementation from DCGAN paper
 """
 import torch
 import torch.nn as nn
+import math
 from collections import OrderedDict
 
 class Discriminator(nn.Module):
     def __init__(self, channels_img, features_d,
-            norm="batch_norm", final_sigmoid=True):
+            norm="batch_norm", img_size=64, final_sigmoid=True):
         super(Discriminator, self).__init__()
         self.norm = norm
-        self.disc = nn.Sequential(OrderedDict([
-            # input: N x channels_img x 64 x 64
+        n_blocks = int(math.log2(img_size//8))
+        block_list = [
+            (f'block{i}', self._block(features_d*(2**(i-1)), features_d*(2**i),
+                4, 2, 1))
+            for i in range(1,n_blocks+1)]
+        full_list = [
             ('conv_in', nn.Conv2d(
                 channels_img, features_d, kernel_size=4,
                 stride=2, padding=1, bias=False
             )),
             ('leaky_relu', nn.LeakyReLU(0.2)),
-            # _block(in_channels, out_channels, kernel_size, stride, padding)
-            ('block1', self._block(features_d, features_d * 2, 4, 2, 1)),
-            ('block2', self._block(features_d * 2, features_d * 4, 4, 2, 1)),
-            ('block3', self._block(features_d * 4, features_d * 8, 4, 2, 1)),
+            *block_list,
             # After all _block img output is 4x4 (Conv2d below makes into 1x1)
             ('conv_out', nn.Conv2d(features_d * 8, 1, kernel_size=4,
                 stride=2, padding=0, bias=False)),
             ('sigmoid', nn.Sigmoid()) if final_sigmoid\
                     else ('identity', nn.Identity())
-            ]))
+            ]
+        self.disc = nn.Sequential(OrderedDict(full_list))
 
     def _block(self, in_channels, out_channels, kernel_size, stride, padding):
         return nn.Sequential(OrderedDict([
