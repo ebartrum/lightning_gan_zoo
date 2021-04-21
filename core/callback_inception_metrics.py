@@ -18,6 +18,7 @@ def _sqn(arr):
 
 def polynomial_mmd_averages(codes_g, codes_r, n_subsets=50, subset_size=1000,
                             ret_var=True, output=sys.stdout, **kernel_args):
+    subset_size = min(len(codes_g),len(codes_r),subset_size)
     m = min(codes_g.shape[0], codes_r.shape[0])
     mmds = np.zeros(n_subsets)
     if ret_var:
