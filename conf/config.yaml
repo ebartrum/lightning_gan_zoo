@@ -28,8 +28,10 @@ val:
   use_fid: True
   inception_stats_filepath: "${dataset.root}/val_inception_stats.pkl"
   fid_n_samples: 5000
-discriminator: MISSING
-generator: MISSING
+discriminator:
+  img_size: "${train.img_size}"
+generator:
+  img_size: "${train.img_size}"
 debug:
   verbose_shape: false
   fast_dev_run: false
