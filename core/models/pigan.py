@@ -83,7 +83,7 @@ class Generator(nn.Module):
             sample_res = self.img_size
         rays_xy = sample_full_xys(batch_size=len(z),
                 img_size=sample_res).to(z.device)
-        R, T = look_at_view_transform(dist=2.7, elev=0, azim=0)
+        R, T = look_at_view_transform(dist=2.7, elev=0, azim=180)
         R = torch.cat(len(z)*[R])
         T = torch.cat(len(z)*[T])
         cameras = FoVOrthographicCameras(
