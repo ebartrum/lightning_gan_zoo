@@ -1,0 +1,42 @@
+# @package _global_
+name: pigan
+model:
+  noise_distn: "${noise_distn}"
+  lm:
+    _target_: core.lightning_module.PIGAN
+  noise_dim: 128
+train:
+  batch_size: 32
+  num_epochs: 25
+  criterion:
+    _target_: torch.nn.BCEWithLogitsLoss
+optimisation:
+  lr: 1e-4
+  disc_freq: 1
+  gen_freq: 2
+  beta1: 0.9
+  beta2: 0.999
+optimiser:
+  _target_: torch.optim.Adam
+  lr: "${optimisation.lr}"
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+discriminator:
+  _target_: core.models.pigan.Discriminator
+  channels_img: "${train.channels_img}"
+  features_d: "${train.features_disc}"
+  img_size: 16
+generator:
+  _target_: core.models.pigan.Generator
+  channels_noise: "${model.noise_dim}"
+  channels_img: "${train.channels_img}"
+  features_g: "${train.features_gen}"
+defaults:
+  - /figures@figures.sample_grid: sample_grid
+  # - /figures@figures.interpolation3d: interpolation3d
+  # - /figures@figures.azimuth_step: azimuth_step
+  # - /figures@figures.elevation_step: elevation_step
+  # - /figures@figures.azimuth_gif: azimuth_gif
+  # - /figures@figures.elevation_gif: elevation_gif
+  - override /noise_distn: uniform
+  - override /lr_scheduler: hologan
+  - override /dataset: mnist
