@@ -30,6 +30,8 @@ generator:
   channels_noise: "${model.noise_dim}"
   channels_img: "${train.channels_img}"
   features_g: "${train.features_gen}"
+figure_details:
+  fid_callback: False
 defaults:
   - /figures@figures.sample_grid: sample_grid
   # - /figures@figures.interpolation3d: interpolation3d

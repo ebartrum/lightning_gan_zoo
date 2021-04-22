@@ -41,7 +41,7 @@ def train(cfg: DictConfig) -> None:
     callbacks = [instantiate(fig,
                 cfg=cfg.figure_details,
                 parent_dir=logging_dir,
-                monitor='fid')
+                monitor='fid' if cfg.figure_details.fid_callback else None)
             for fig in cfg.figures.values()]
                 
     callbacks.append(ModelCheckpoint(

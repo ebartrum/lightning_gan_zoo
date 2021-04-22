@@ -38,6 +38,7 @@ debug:
 figure_details:
     dir: "figures"
     filename: ""
+    fid_callback: True
 hydra:
   output_subdir: null
   run:
