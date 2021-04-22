@@ -30,6 +30,8 @@ generator:
   channels_img: "${train.channels_img}"
   features_g: "${train.features_gen}"
   nerf_cfg: "${nerf}"
+  azimuth_low: 220
+  azimuth_high: 320
 nerf:
   n_pts_per_ray: 16
   n_pts_per_ray_fine: 16

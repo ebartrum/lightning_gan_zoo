@@ -11,6 +11,7 @@ from pytorch3d.renderer import (
     FoVOrthographicCameras,
     look_at_view_transform,
 )
+import numpy as np
 
 class Discriminator(nn.Module):
     def __init__(self, channels_img, features_d,
@@ -60,9 +61,11 @@ class Discriminator(nn.Module):
 
 class Generator(nn.Module):
     def __init__(self, channels_noise, channels_img, features_g,
-            nerf_cfg, img_size=64):
+            nerf_cfg, azimuth_low, azimuth_high, img_size=64):
         super(Generator, self).__init__()
         self.img_size = img_size
+        self.azimuth_low = azimuth_low
+        self.azimuth_high = azimuth_high
         self.nerf_renderer = RadianceFieldRenderer(
             n_pts_per_ray=nerf_cfg.n_pts_per_ray,
             n_pts_per_ray_fine=nerf_cfg.n_pts_per_ray_fine,
@@ -83,9 +86,11 @@ class Generator(nn.Module):
             sample_res = self.img_size
         rays_xy = sample_full_xys(batch_size=len(z),
                 img_size=sample_res).to(z.device)
-        R, T = look_at_view_transform(dist=2.7, elev=0, azim=180)
-        R = torch.cat(len(z)*[R])
-        T = torch.cat(len(z)*[T])
+        batch_size = len(z)
+        azimuth_samples = np.random.randint(self.azimuth_low, self.azimuth_high,
+                                  (batch_size)).astype(np.float)
+        R, T = look_at_view_transform(dist=2.7, elev=batch_size*[0],
+                azim=azimuth_samples)
         cameras = FoVOrthographicCameras(
             R = R, 
             T = T, 
