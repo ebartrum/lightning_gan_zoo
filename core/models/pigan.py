@@ -5,6 +5,12 @@ import torch
 import torch.nn as nn
 import math
 from collections import OrderedDict
+from core.nerf.nerf_renderer import RadianceFieldRenderer
+from core.nerf.utils import sample_full_xys
+from pytorch3d.renderer import (
+    FoVOrthographicCameras,
+    look_at_view_transform,
+)
 
 class Discriminator(nn.Module):
     def __init__(self, channels_img, features_d,
@@ -53,47 +59,38 @@ class Discriminator(nn.Module):
         return self.disc(x)
 
 class Generator(nn.Module):
-    def __init__(self, channels_noise, channels_img, features_g, img_size=64):
+    def __init__(self, channels_noise, channels_img, features_g,
+            nerf_cfg, img_size=64):
         super(Generator, self).__init__()
         self.img_size = img_size
-        n_blocks = int(math.log2(img_size/4))
-        block_list = [
-            ('block1', self._block(channels_noise, features_g * (2**n_blocks), 4, 1, 0)),  # img: 4x4
-            ]
-        block_list.extend([
-        (f'block{a}', self._block(features_g * 2**b, features_g * 2**(b-1), 4, 2, 1))
-                for (a,b) in zip(range(1,n_blocks+1), range(n_blocks+1,1,-1))][1:])
-
-        full_list = [
-            # Input: N x channels_noise x 1 x 1
-            *block_list,
-            ('transpose_conv_out', nn.ConvTranspose2d(
-                features_g * 2, channels_img, kernel_size=4,
-                stride=2, padding=1, bias=False)),
-            # Output: N x channels_img x img_size x img_size
-            ('tanh', nn.Tanh()),
-            ]
-        self.net = nn.Sequential(OrderedDict(full_list))
-
-    def _block(self, in_channels, out_channels, kernel_size, stride, padding):
-        return nn.Sequential(OrderedDict([
-            ('transpose_conv', nn.ConvTranspose2d(
-                in_channels,
-                out_channels,
-                kernel_size,
-                stride,
-                padding,
-                bias=False,
-                )),
-            ('batch_norm', nn.BatchNorm2d(out_channels)),
-            ('relu', nn.ReLU()),
-            ]))
-
-    def forward(self, x, sample_res=None):
+        self.nerf_renderer = RadianceFieldRenderer(
+            n_pts_per_ray=nerf_cfg.n_pts_per_ray,
+            n_pts_per_ray_fine=nerf_cfg.n_pts_per_ray_fine,
+            min_depth=0.1,
+            max_depth=3.0,
+            stratified=True,
+            stratified_test=False,
+            chunk_size=6000,
+            n_harmonic_functions_xyz=10,
+            n_harmonic_functions_dir=4,
+            n_hidden_neurons_xyz=256,
+            n_hidden_neurons_dir=128,
+            n_layers_xyz=8,
+            density_noise_std=0.0,
+        )
+    def forward(self, z, sample_res=None):
         if sample_res is None:
             sample_res = self.img_size
-        x = x.unsqueeze(-1).unsqueeze(-1)
-        out = self.net(x)
-        if out.shape[-1] != sample_res:
-            out = torch.nn.functional.interpolate(out, size=sample_res)
+        rays_xy = sample_full_xys(batch_size=len(z),
+                img_size=sample_res).to(z.device)
+        R, T = look_at_view_transform(dist=2.7, elev=0, azim=0)
+        R = torch.cat(len(z)*[R])
+        T = torch.cat(len(z)*[T])
+        cameras = FoVOrthographicCameras(
+            R = R, 
+            T = T, 
+            device = z.device,
+        )
+        rgb_out = self.nerf_renderer(cameras, rays_xy)
+        out = rgb_out.permute(0,3,1,2)
         return out

@@ -6,7 +6,7 @@ model:
     _target_: core.lightning_module.PIGAN
   noise_dim: 128
 train:
-  batch_size: 32
+  batch_size: 8
   num_epochs: 25
   criterion:
     _target_: torch.nn.BCEWithLogitsLoss
@@ -28,6 +28,10 @@ generator:
   channels_noise: "${model.noise_dim}"
   channels_img: "${train.channels_img}"
   features_g: "${train.features_gen}"
+  nerf_cfg: "${nerf}"
+nerf:
+  n_pts_per_ray: 16
+  n_pts_per_ray_fine: 16
 figure_details:
   fid_callback: False
 defaults:
