@@ -7,6 +7,7 @@ model:
   noise_dim: 128
 train:
   batch_size: 8
+  training_resolution: 16
   num_epochs: 25
   criterion:
     _target_: torch.nn.BCEWithLogitsLoss
@@ -22,7 +23,7 @@ discriminator:
   _target_: core.models.pigan.Discriminator
   channels_img: "${train.channels_img}"
   features_d: "${train.features_disc}"
-  img_size: 16
+  img_size: "${train.training_resolution}"
 generator:
   _target_: core.models.pigan.Generator
   channels_noise: "${model.noise_dim}"

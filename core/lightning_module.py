@@ -219,7 +219,7 @@ class HOLOGAN(BaseGAN):
 
 class PIGAN(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
-        training_resolution = 16
+        training_resolution = self.cfg.train.training_resolution
         real, _ = batch
         rays_xy = sample_full_xys(batch_size=len(real),
                 img_size=training_resolution).to(self.device)
@@ -235,7 +235,7 @@ class PIGAN(BaseGAN):
             disc_real = self.discriminator(real_sampled).reshape(-1)
             loss_disc_real = self.criterion(disc_real,
                     torch.ones_like(disc_real))
-            disc_fake = self.discriminator(fake.detach()).reshape(-1)
+            disc_fake = self.discriminator(fake).reshape(-1) #TODO: put detach here
             loss_disc_fake = self.criterion(disc_fake,
                     torch.zeros_like(disc_fake))
             loss_disc = (loss_disc_real + loss_disc_fake) / 2
