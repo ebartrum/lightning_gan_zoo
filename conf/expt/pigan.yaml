@@ -12,9 +12,7 @@ train:
     _target_: torch.nn.BCEWithLogitsLoss
 optimisation:
   lr: 1e-4
-  disc_freq: 1
-  gen_freq: 2
-  beta1: 0.9
+  beta1: 0.5
   beta2: 0.999
 optimiser:
   _target_: torch.optim.Adam
@@ -34,11 +32,4 @@ figure_details:
   fid_callback: False
 defaults:
   - /figures@figures.sample_grid: sample_grid
-  # - /figures@figures.interpolation3d: interpolation3d
-  # - /figures@figures.azimuth_step: azimuth_step
-  # - /figures@figures.elevation_step: elevation_step
-  # - /figures@figures.azimuth_gif: azimuth_gif
-  # - /figures@figures.elevation_gif: elevation_gif
-  - override /noise_distn: uniform
-  - override /lr_scheduler: hologan
   - override /dataset: mnist
