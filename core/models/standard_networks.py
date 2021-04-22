@@ -24,7 +24,7 @@ class Discriminator(nn.Module):
             ('leaky_relu', nn.LeakyReLU(0.2)),
             *block_list,
             # After all _block img output is 4x4 (Conv2d below makes into 1x1)
-            ('conv_out', nn.Conv2d(features_d * 8, 1, kernel_size=4,
+            ('conv_out', nn.Conv2d(features_d * (2**n_blocks), 1, kernel_size=4,
                 stride=2, padding=0, bias=False)),
             ('sigmoid', nn.Sigmoid()) if final_sigmoid\
                     else ('identity', nn.Identity())
@@ -53,20 +53,26 @@ class Discriminator(nn.Module):
         return self.disc(x)
 
 class Generator(nn.Module):
-    def __init__(self, channels_noise, channels_img, features_g):
+    def __init__(self, channels_noise, channels_img, features_g, img_size=64):
         super(Generator, self).__init__()
-        self.net = nn.Sequential(OrderedDict([
+        n_blocks = int(math.log2(64/4))
+        block_list = [
+            ('block1', self._block(channels_noise, features_g * (2**n_blocks), 4, 1, 0)),  # img: 4x4
+            ]
+        block_list.extend([
+        (f'block{a}', self._block(features_g * 2**b, features_g * 2**(b-1), 4, 2, 1))
+                for (a,b) in zip(range(1,n_blocks+1), range(n_blocks+1,1,-1))][1:])
+
+        full_list = [
             # Input: N x channels_noise x 1 x 1
-            ('block1', self._block(channels_noise, features_g * 16, 4, 1, 0)),  # img: 4x4
-            ('block2', self._block(features_g * 16, features_g * 8, 4, 2, 1)),  # img: 8x8
-            ('block3', self._block(features_g * 8, features_g * 4, 4, 2, 1)),  # img: 16x16
-            ('block4', self._block(features_g * 4, features_g * 2, 4, 2, 1)),  # img: 32x32
+            *block_list,
             ('transpose_conv_out', nn.ConvTranspose2d(
                 features_g * 2, channels_img, kernel_size=4,
                 stride=2, padding=1, bias=False)),
-            # Output: N x channels_img x 64 x 64
+            # Output: N x channels_img x img_size x img_size
             ('tanh', nn.Tanh()),
-            ]))
+            ]
+        self.net = nn.Sequential(OrderedDict(full_list))
 
     def _block(self, in_channels, out_channels, kernel_size, stride, padding):
         return nn.Sequential(OrderedDict([
