@@ -55,7 +55,7 @@ class Discriminator(nn.Module):
 class Generator(nn.Module):
     def __init__(self, channels_noise, channels_img, features_g, img_size=64):
         super(Generator, self).__init__()
-        n_blocks = int(math.log2(64/4))
+        n_blocks = int(math.log2(img_size/4))
         block_list = [
             ('block1', self._block(channels_noise, features_g * (2**n_blocks), 4, 1, 0)),  # img: 4x4
             ]
