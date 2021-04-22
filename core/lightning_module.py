@@ -10,6 +10,7 @@ from hydra.utils import instantiate, call
 from abc import abstractmethod
 import numpy as np
 import math
+from core.nerf.utils import sample_images_at_xys, sample_full_xys
 
 class BaseGAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
@@ -218,14 +219,20 @@ class HOLOGAN(BaseGAN):
 
 class PIGAN(BaseGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
+        training_resolution = 16
         real, _ = batch
+        rays_xy = sample_full_xys(batch_size=len(real),
+                img_size=training_resolution).to(self.device)
+        real_sampled = sample_images_at_xys(real.permute(0,2,3,1), rays_xy)
+        real_sampled = real_sampled.permute(0,3,1,2)
+
         z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
         fake = self.generator(z)
 
         # train discriminator
         if optimizer_idx == 0:
-            disc_real = self.discriminator(real).reshape(-1)
+            disc_real = self.discriminator(real_sampled).reshape(-1)
             loss_disc_real = self.criterion(disc_real,
                     torch.ones_like(disc_real))
             disc_fake = self.discriminator(fake.detach()).reshape(-1)
