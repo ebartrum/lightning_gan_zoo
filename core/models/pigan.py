@@ -97,5 +97,5 @@ class Generator(nn.Module):
             device = z.device,
         )
         rgb_out = self.nerf_renderer(cameras, rays_xy)
-        out = rgb_out.permute(0,3,1,2)
+        out = 2*rgb_out.permute(0,3,1,2)-1
         return out
