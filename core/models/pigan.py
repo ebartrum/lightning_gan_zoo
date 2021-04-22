@@ -55,6 +55,7 @@ class Discriminator(nn.Module):
 class Generator(nn.Module):
     def __init__(self, channels_noise, channels_img, features_g, img_size=64):
         super(Generator, self).__init__()
+        self.img_size = img_size
         n_blocks = int(math.log2(img_size/4))
         block_list = [
             ('block1', self._block(channels_noise, features_g * (2**n_blocks), 4, 1, 0)),  # img: 4x4
@@ -88,6 +89,11 @@ class Generator(nn.Module):
             ('relu', nn.ReLU()),
             ]))
 
-    def forward(self, x):
+    def forward(self, x, sample_res=None):
+        if sample_res is None:
+            sample_res = self.img_size
         x = x.unsqueeze(-1).unsqueeze(-1)
-        return self.net(x)
+        out = self.net(x)
+        if out.shape[-1] != sample_res:
+            out = torch.nn.functional.interpolate(out, size=sample_res)
+        return out

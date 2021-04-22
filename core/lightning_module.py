@@ -228,7 +228,7 @@ class PIGAN(BaseGAN):
 
         z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
-        fake = self.generator(z)
+        fake = self.generator(z, sample_res=training_resolution)
 
         # train discriminator
         if optimizer_idx == 0:
