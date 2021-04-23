@@ -6,7 +6,7 @@ model:
     _target_: core.lightning_module.PIGAN
   noise_dim: 128
 train:
-  batch_size: 8
+  batch_size: 12
   training_resolution: 16
   num_epochs: 25
   criterion:
