@@ -12,52 +12,7 @@ from pytorch3d.renderer import (
     look_at_view_transform,
 )
 import numpy as np
-
-class Discriminator(nn.Module):
-    def __init__(self, channels_img, features_d,
-            norm="batch_norm", img_size=64, final_sigmoid=True):
-        super(Discriminator, self).__init__()
-        self.norm = norm
-        n_blocks = int(math.log2(img_size//8))
-        block_list = [
-            (f'block{i}', self._block(features_d*(2**(i-1)), features_d*(2**i),
-                4, 2, 1))
-            for i in range(1,n_blocks+1)]
-        full_list = [
-            ('conv_in', nn.Conv2d(
-                channels_img, features_d, kernel_size=4,
-                stride=2, padding=1, bias=False
-            )),
-            ('leaky_relu', nn.LeakyReLU(0.2)),
-            *block_list,
-            # After all _block img output is 4x4 (Conv2d below makes into 1x1)
-            ('conv_out', nn.Conv2d(features_d * (2**n_blocks), 1, kernel_size=4,
-                stride=2, padding=0, bias=False)),
-            ('sigmoid', nn.Sigmoid()) if final_sigmoid\
-                    else ('identity', nn.Identity())
-            ]
-        self.disc = nn.Sequential(OrderedDict(full_list))
-
-    def _block(self, in_channels, out_channels, kernel_size, stride, padding):
-        return nn.Sequential(OrderedDict([
-            ('conv', nn.Conv2d(
-                in_channels,
-                out_channels,
-                kernel_size,
-                stride,
-                padding,
-                bias=False,
-                )),
-            ('batch_norm', nn.BatchNorm2d(out_channels))\
-                    if self.norm=='batch_norm' else\
-                    ('instance_norm2d', nn.InstanceNorm2d(out_channels, affine=True))\
-                    if self.norm=='instance_norm2d' else\
-                    ('identity', nn.Identity()),
-            ('leaky_relu', nn.LeakyReLU(0.2)),
-            ]))
-
-    def forward(self, x):
-        return self.disc(x)
+from core.utils.coordconv import CoordConv
 
 class Generator(nn.Module):
     def __init__(self, channels_noise, channels_img, features_g,
@@ -99,4 +54,108 @@ class Generator(nn.Module):
         )
         rgb_out = self.nerf_renderer(z, cameras, rays_xy)
         out = 2*rgb_out.permute(0,3,1,2)-1
+        return out
+
+def leaky_relu(p = 0.2):
+    return nn.LeakyReLU(p)
+
+class DiscriminatorBlock(nn.Module):
+    def __init__(self, dim, dim_out):
+        super().__init__()
+        self.res = CoordConv(dim, dim_out, kernel_size = 1, stride = 2)
+
+        self.net = nn.Sequential(
+            CoordConv(dim, dim_out, kernel_size = 3, padding = 1),
+            leaky_relu(),
+            CoordConv(dim_out, dim_out, kernel_size = 3, padding = 1),
+            leaky_relu()
+        )
+
+        self.down = nn.AvgPool2d(2)
+
+    def forward(self, x):
+        res = self.res(x)
+        x = self.net(x)
+        x = self.down(x)
+        x = x + res
+        return x
+
+class Discriminator(nn.Module):
+    def __init__(
+        self,
+        img_size,
+        init_chan = 64,
+        max_chan = 400,
+        init_resolution = 32,
+        add_layer_iters = 10000
+    ):
+        super().__init__()
+        resolutions = math.log2(img_size)
+        assert resolutions.is_integer(), 'image size must be a power of 2'
+        assert math.log2(init_resolution).is_integer(), 'initial resolution must be power of 2'
+
+        resolutions = int(resolutions)
+        layers = resolutions - 1
+
+        chans = list(reversed(list(map(lambda t: 2 ** (11 - t), range(layers)))))
+        chans = list(map(lambda n: min(max_chan, n), chans))
+        chans = [init_chan, *chans]
+        final_chan = chans[-1]
+
+        self.from_rgb_layers = nn.ModuleList([])
+        self.layers = nn.ModuleList([])
+        self.img_size = img_size
+        self.resolutions = list(map(lambda t: 2 ** (7 - t), range(layers)))
+
+        for resolution, in_chan, out_chan in zip(self.resolutions, chans[:-1], chans[1:]):
+
+            from_rgb_layer = nn.Sequential(
+                CoordConv(3, in_chan, kernel_size = 1),
+                leaky_relu()
+            ) if resolution >= init_resolution else None
+
+            self.from_rgb_layers.append(from_rgb_layer)
+
+            self.layers.append(DiscriminatorBlock(
+                dim = in_chan,
+                dim_out = out_chan
+            ))
+
+        self.final_conv = CoordConv(final_chan, 1, kernel_size = 2)
+
+        self.add_layer_iters = add_layer_iters
+        self.register_buffer('alpha', torch.tensor(0.))
+        self.register_buffer('resolution', torch.tensor(init_resolution))
+        self.register_buffer('iterations', torch.tensor(0.))
+
+    def increase_resolution_(self):
+        if self.resolution >= self.img_size:
+            return
+
+        self.alpha += self.alpha + (1 - self.alpha)
+        self.iterations.fill_(0.)
+        self.resolution *= 2
+
+    def update_iter_(self):
+        self.iterations += 1
+        self.alpha -= (1 / self.add_layer_iters)
+        self.alpha.clamp_(min = 0.)
+
+    def forward(self, img):
+        x = img
+
+        for resolution, from_rgb, layer in zip(self.resolutions, self.from_rgb_layers, self.layers):
+            if self.resolution < resolution:
+                continue
+
+            if self.resolution == resolution:
+                x = from_rgb(x)
+
+            if bool(resolution == (self.resolution // 2)) and bool(self.alpha > 0):
+                x_down = F.interpolate(img, scale_factor = 0.5)
+                x = x * (1 - self.alpha) + from_rgb(x_down) * self.alpha
+
+            x = layer(x)
+
+        out = self.final_conv(x)
         return out

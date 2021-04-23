@@ -19,11 +19,16 @@ optimiser:
   _target_: torch.optim.Adam
   lr: "${optimisation.lr}"
   betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+# discriminator:
+#   _target_: core.models.pigan.Discriminator
+#   channels_img: "${train.channels_img}"
+#   features_d: "${train.features_disc}"
+#   img_size: "${train.training_resolution}"
 discriminator:
   _target_: core.models.pigan.Discriminator
-  channels_img: "${train.channels_img}"
-  features_d: "${train.features_disc}"
-  img_size: "${train.training_resolution}"
+  img_size: "${train.img_size}"
+  init_chan: "${train.features_disc}"
+  init_resolution: "${train.training_resolution}"
 generator:
   _target_: core.models.pigan.Generator
   channels_noise: "${model.noise_dim}"
