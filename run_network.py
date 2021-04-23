@@ -44,12 +44,14 @@ def train(cfg: DictConfig) -> None:
                 monitor='fid' if cfg.figure_details.fid_callback else None)
             for fig in cfg.figures.values()]
                 
-    callbacks.append(ModelCheckpoint(
-            monitor='fid', filename='model_best-{fid:.2f}'))
-    callbacks.append(InceptionMetrics(model=model, real_img_dir=cfg.dataset.val.root,
-            fake_img_dir=os.path.join(logging_dir,"test_samples"),
-            data_transform=model.transform, fid_name="fid",
-            n_samples=cfg.val.fid_n_samples))
+    if cfg.save_ckpts:
+        callbacks.append(ModelCheckpoint(
+                monitor='fid', filename='model_best-{fid:.2f}'))
+    if cfg.calc_fid:
+        callbacks.append(InceptionMetrics(model=model, real_img_dir=cfg.dataset.val.root,
+                fake_img_dir=os.path.join(logging_dir,"test_samples"),
+                data_transform=model.transform, fid_name="fid",
+                n_samples=cfg.val.fid_n_samples))
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
 
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
