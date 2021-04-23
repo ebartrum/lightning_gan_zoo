@@ -40,6 +40,8 @@ generator:
 nerf:
   n_pts_per_ray: 16
   n_pts_per_ray_fine: 16
+save_ckpts: False
+calc_fid: False
 figure_details:
   fid_callback: False
 defaults:

@@ -39,6 +39,8 @@ figure_details:
     dir: "figures"
     filename: ""
     fid_callback: True
+save_ckpts: True
+calc_fid: True
 hydra:
   output_subdir: null
   run:
