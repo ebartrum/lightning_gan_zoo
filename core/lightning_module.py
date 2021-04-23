@@ -218,9 +218,46 @@ class HOLOGAN(BaseGAN):
             return loss_gen + q_loss
 
 class PIGAN(BaseGAN):
+    def __init__(self, cfg, logging_dir):
+        super().__init__(cfg, logging_dir)
+        self.max_res = cfg.train.img_size
+        self.starting_res = cfg.train.training_resolution
+        self.current_res = self.starting_res
+        self.res_update_timesteps = [4000]
+        self.train_iter = 0
+        self.current_batch_size = cfg.train.batch_size
+
+    def configure_optimizers(self):
+        opt_disc = torch.optim.Adam(self.discriminator.parameters(),
+                lr=4e-4, betas=(0,0.9))
+        opt_gen = torch.optim.Adam(self.generator.parameters(),
+                lr=5e-5, betas=(0,0.9))
+        scheduler_disc = instantiate(self.cfg.optimisation.lr_scheduler,
+                optimizer=opt_disc)
+        scheduler_gen = instantiate(self.cfg.optimisation.lr_scheduler,
+                optimizer=opt_gen)
+        return ({'optimizer': opt_disc, 'lr_scheduler': scheduler_disc,
+                    'frequency': self.cfg.optimisation.disc_freq},
+               {'optimizer': opt_gen, 'lr_scheduler': scheduler_gen,
+                   'frequency': self.cfg.optimisation.gen_freq})
+        
+    def training_res_schedule_step(self):
+        self.train_iter += 1
+        self.discriminator.update_iter_()
+        if self.train_iter in self.res_update_timesteps:
+            if self.current_res < self.max_res:
+                print(f"Increasing training_resolution from " +\
+                        f"{self.current_res} to {self.current_res*2}")
+                self.current_res *= 2
+                self.current_batch_size = self.current_batch_size//4
+            assert self.current_res <= self.max_res
+            self.discriminator.increase_resolution_()
+
     def training_step(self, batch, batch_idx, optimizer_idx):
-        training_resolution = self.cfg.train.training_resolution
+        training_resolution = self.current_res
         real, _ = batch
+        real = real[:self.current_batch_size]
+
         rays_xy = sample_full_xys(batch_size=len(real),
                 img_size=training_resolution).to(self.device)
         real_sampled = sample_images_at_xys(real.permute(0,2,3,1), rays_xy)
@@ -242,11 +279,15 @@ class PIGAN(BaseGAN):
                     torch.zeros_like(disc_fake))
             loss_disc = (loss_disc_real + loss_disc_fake) / 2
             self.log('train/d_loss', loss_disc)
-            return loss_disc
+            out = loss_disc
 
         # train generator
         if optimizer_idx == 1:
             output = self.discriminator(fake).reshape(-1)
             loss_gen = self.criterion(output, torch.ones_like(output))
             self.log('train/g_loss', loss_gen)
-            return loss_gen
+            out = loss_gen
+
+        #Step the training resolution scheduler
+        self.training_res_schedule_step()
+        return out

@@ -3,6 +3,7 @@ Discriminator and Generator implementation from DCGAN paper
 """
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import math
 from collections import OrderedDict
 from core.nerf.nerf_renderer import RadianceFieldRenderer
@@ -105,7 +106,7 @@ class Discriminator(nn.Module):
         self.from_rgb_layers = nn.ModuleList([])
         self.layers = nn.ModuleList([])
         self.img_size = img_size
-        self.resolutions = list(map(lambda t: 2 ** (7 - t), range(layers)))
+        self.resolutions = list(map(lambda t: 2 ** (resolutions - t), range(layers)))
 
         for resolution, in_chan, out_chan in zip(self.resolutions, chans[:-1], chans[1:]):
 
@@ -122,6 +123,7 @@ class Discriminator(nn.Module):
             ))
 
         self.final_conv = CoordConv(final_chan, 1, kernel_size = 2)
+        self.final_sigmoid = nn.Sigmoid()
 
         self.add_layer_iters = add_layer_iters
         self.register_buffer('alpha', torch.tensor(0.))
@@ -138,7 +140,7 @@ class Discriminator(nn.Module):
 
     def update_iter_(self):
         self.iterations += 1
-        self.alpha -= (1 / self.add_layer_iters)
+        self.alpha = self.alpha - (1 / self.add_layer_iters)
         self.alpha.clamp_(min = 0.)
 
     def forward(self, img):
@@ -158,4 +160,5 @@ class Discriminator(nn.Module):
             x = layer(x)
 
         out = self.final_conv(x)
+        # out = self.final_sigmoid(out)
         return out
