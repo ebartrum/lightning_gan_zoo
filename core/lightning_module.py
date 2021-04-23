@@ -272,9 +272,7 @@ class PIGAN(BaseGAN):
             disc_real = self.discriminator(real_sampled).reshape(-1)
             loss_disc_real = self.criterion(disc_real,
                     torch.ones_like(disc_real))
-            with torch.no_grad():
-                fake_disc_input = fake #TODO: hopefully equivalent to detach
-            disc_fake = self.discriminator(fake_disc_input).reshape(-1)
+            disc_fake = self.discriminator(fake.clone().detach()).reshape(-1)
             loss_disc_fake = self.criterion(disc_fake,
                     torch.zeros_like(disc_fake))
             loss_disc = (loss_disc_real + loss_disc_fake) / 2
