@@ -41,6 +41,7 @@ save_ckpts: False
 calc_fid: False
 figure_details:
   fid_callback: False
+  save_all: True
 defaults:
   - /figures@figures.sample_grid: sample_grid
   - override /dataset: mnist

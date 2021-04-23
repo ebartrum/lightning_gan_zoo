@@ -22,6 +22,7 @@ class Figure(Callback):
            os.makedirs(self.save_dir)
        self.monitor = monitor
        self.current_best_metric = np.inf
+       self.save_all = cfg.save_all
 
     @abstractmethod
     def draw(self, pl_module):
@@ -31,15 +32,21 @@ class Figure(Callback):
         """
         pass
 
-    def save(self, array):
+    def save(self, array, timestep=None):
         assert array.min()>=0 and array.max()<=1,\
                 "Figure array should lie in [0,1]"
         array = (array*255).astype(int)
-        imageio.imwrite(f"{self.save_dir}/{self.filename}", array)
+        if timestep:
+           if not os.path.exists(f"{self.save_dir}/{timestep}"):
+               os.makedirs(f"{self.save_dir}/{timestep}")
+               imageio.imwrite(f"{self.save_dir}/{timestep}/{self.filename}", array)
+        else:
+            imageio.imwrite(f"{self.save_dir}/{self.filename}", array)
 
     def draw_and_save(self, pl_module):
         fig_array = self.draw(pl_module)
-        self.save(fig_array)
+        timestep = f"epoch_{pl_module.current_epoch}" if self.save_all else None
+        self.save(fig_array, timestep=timestep)
 
     def on_validation_end(self, trainer, pl_module):
         if self.monitor:

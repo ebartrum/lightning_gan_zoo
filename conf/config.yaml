@@ -39,6 +39,7 @@ figure_details:
     dir: "figures"
     filename: ""
     fid_callback: True
+    save_all: False
 save_ckpts: True
 calc_fid: True
 hydra:
