@@ -269,13 +269,16 @@ class PIGAN(BaseGAN):
 
         # train discriminator
         if optimizer_idx == 0:
+            real_sampled.requires_grad_()
             disc_real = self.discriminator(real_sampled).reshape(-1)
             loss_disc_real = self.criterion(disc_real,
                     torch.ones_like(disc_real))
             disc_fake = self.discriminator(fake.clone().detach()).reshape(-1)
             loss_disc_fake = self.criterion(disc_fake,
                     torch.zeros_like(disc_fake))
-            loss_disc = (loss_disc_real + loss_disc_fake) / 2
+            r1_reg = self.cfg.loss_weight.reg * compute_grad2(
+                    disc_real, real_sampled).mean()
+            loss_disc = r1_reg + (loss_disc_real + loss_disc_fake) 
             self.log('train/d_loss', loss_disc)
             out = loss_disc
 

@@ -160,5 +160,5 @@ class Discriminator(nn.Module):
             x = layer(x)
 
         out = self.final_conv(x)
-        # out = self.final_sigmoid(out)
+        out = self.final_sigmoid(out)
         return out

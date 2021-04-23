@@ -11,6 +11,8 @@ train:
   num_epochs: 25
   criterion:
     _target_: torch.nn.BCEWithLogitsLoss
+loss_weight:
+  reg: 10
 optimisation:
   lr: 1e-4
   beta1: 0.5
