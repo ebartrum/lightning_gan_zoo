@@ -80,6 +80,7 @@ class Generator(nn.Module):
             n_hidden_neurons_dir=128,
             n_layers_xyz=8,
             density_noise_std=0.0,
+            latent_z_dim=channels_noise
         )
     def forward(self, z, sample_res=None):
         if sample_res is None:
@@ -96,6 +97,6 @@ class Generator(nn.Module):
             T = T, 
             device = z.device,
         )
-        rgb_out = self.nerf_renderer(cameras, rays_xy)
+        rgb_out = self.nerf_renderer(z, cameras, rays_xy)
         out = 2*rgb_out.permute(0,3,1,2)-1
         return out

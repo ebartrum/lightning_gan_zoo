@@ -17,6 +17,7 @@ def _xavier_init(linear):
 class NeuralRadianceField(torch.nn.Module):
     def __init__(
         self,
+        latent_z_dim: int,
         n_harmonic_functions_xyz: int = 6,
         n_harmonic_functions_dir: int = 4,
         n_hidden_neurons_xyz: int = 256,
@@ -62,12 +63,24 @@ class NeuralRadianceField(torch.nn.Module):
             input_skips=append_xyz,
         )
 
+        encoded_z_dim = 32
+        
+        self.mlp_latent_z = torch.nn.Sequential(
+            torch.nn.Linear(latent_z_dim, latent_z_dim*2),
+            torch.nn.ReLU(True),
+            torch.nn.Linear(latent_z_dim*2, latent_z_dim*4),
+            torch.nn.ReLU(True),
+            torch.nn.Linear(latent_z_dim*4, encoded_z_dim),
+        )
+
         self.intermediate_linear = torch.nn.Linear(
-            n_hidden_neurons_xyz, n_hidden_neurons_xyz
+            n_hidden_neurons_xyz+encoded_z_dim,
+            n_hidden_neurons_xyz+encoded_z_dim
         )
         _xavier_init(self.intermediate_linear)
 
-        self.density_layer = torch.nn.Linear(n_hidden_neurons_xyz, 1)
+        self.density_layer = torch.nn.Linear(
+                n_hidden_neurons_xyz+encoded_z_dim, 1)
         _xavier_init(self.density_layer)
 
         # Zero the bias of the density layer to avoid
@@ -76,12 +89,13 @@ class NeuralRadianceField(torch.nn.Module):
 
         self.color_layer = torch.nn.Sequential(
             torch.nn.Linear(
-                n_hidden_neurons_xyz + embedding_dim_dir, n_hidden_neurons_dir
+                n_hidden_neurons_xyz + encoded_z_dim + embedding_dim_dir, n_hidden_neurons_dir
             ),
             torch.nn.ReLU(True),
             torch.nn.Linear(n_hidden_neurons_dir, 3),
             torch.nn.Sigmoid(),
         )
+
 
     def _get_densities(
         self,
@@ -145,6 +159,7 @@ class NeuralRadianceField(torch.nn.Module):
     def forward(
         self,
         ray_bundle: RayBundle,
+        z: torch.Tensor,
         density_noise_std: float = 0.0,
         **kwargs,
     ):
@@ -187,8 +202,13 @@ class NeuralRadianceField(torch.nn.Module):
         # embeds_xyz.shape = [minibatch x ... x self.n_harmonic_functions*6 + 3]
 
         # self.mlp maps each harmonic embedding to a latent feature space.
-        features = self.mlp_xyz(embeds_xyz, embeds_xyz)
-        # features.shape = [minibatch x ... x self.n_hidden_neurons_xyz]
+        xyz_features = self.mlp_xyz(embeds_xyz, embeds_xyz)
+
+        z_latent_encoded = self.mlp_latent_z(z
+                ).unsqueeze(1).unsqueeze(1).repeat(
+                        1,*(xyz_features.shape[1:-1]),1)
+
+        features = torch.cat([xyz_features, z_latent_encoded], -1)
 
         rays_densities = self._get_densities(
             features, ray_bundle.lengths, density_noise_std

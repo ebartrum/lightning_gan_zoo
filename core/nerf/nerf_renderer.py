@@ -25,6 +25,7 @@ class RadianceFieldRenderer(torch.nn.Module):
         stratified: bool,
         stratified_test: bool,
         chunk_size: int,
+        latent_z_dim: int,
         n_harmonic_functions_xyz: int = 6,
         n_harmonic_functions_dir: int = 4,
         n_hidden_neurons_xyz: int = 256,
@@ -77,6 +78,7 @@ class RadianceFieldRenderer(torch.nn.Module):
                 n_hidden_neurons_dir=n_hidden_neurons_dir,
                 n_layers_xyz=n_layers_xyz,
                 append_xyz=append_xyz,
+                latent_z_dim=latent_z_dim
             )
 
         self._density_noise_std = density_noise_std
@@ -87,6 +89,7 @@ class RadianceFieldRenderer(torch.nn.Module):
 
     def _process_ray_chunk(
         self,
+        z: torch.Tensor,
         camera: CamerasBase,
         chunk_idx: int,
         rays_xy: torch.Tensor
@@ -106,6 +109,7 @@ class RadianceFieldRenderer(torch.nn.Module):
         # First evaluate the coarse rendering pass, then the fine one.
         for renderer_pass in ("coarse", "fine"):
             (rgb, weights), ray_bundle_out = self._renderer[renderer_pass](
+                z=z,
                 cameras=camera,
                 volumetric_function=self._implicit_function[renderer_pass],
                 chunksize=self.chunk_size,
@@ -149,11 +153,12 @@ class RadianceFieldRenderer(torch.nn.Module):
 
     def forward(
         self,
+        z: torch.Tensor,
         camera: CamerasBase,
         rays_xy: torch.Tensor
     ) -> torch.Tensor:
 
-        batch_size, device = camera.R.shape[0], camera.device
+        batch_size, device = len(z), z.device
         n_rays = rays_xy.shape[1:-1].numel()
         spatial_output_shape = rays_xy.shape[1:-1]+tuple([3])
         n_chunks = int(math.ceil((n_rays * batch_size) / self.chunk_size))
@@ -161,6 +166,7 @@ class RadianceFieldRenderer(torch.nn.Module):
         # Process the chunks of rays.
         chunk_outputs = [
             self._process_ray_chunk(
+                z,
                 camera,
                 chunk_idx,
                 rays_xy
