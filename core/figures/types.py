@@ -39,7 +39,7 @@ class Figure(Callback):
         if timestep:
            if not os.path.exists(f"{self.save_dir}/{timestep}"):
                os.makedirs(f"{self.save_dir}/{timestep}")
-               imageio.imwrite(f"{self.save_dir}/{timestep}/{self.filename}", array)
+           imageio.imwrite(f"{self.save_dir}/{timestep}/{self.filename}", array)
         else:
             imageio.imwrite(f"{self.save_dir}/{self.filename}", array)
 
@@ -79,22 +79,32 @@ class AnimationFigure(Figure):
         """
         pass
 
-    def save(self, array_list):
+    def save(self, array_list, timestep=None):
         pil_list = []
         for array in array_list:
             assert array.min()>=0 and array.max()<=1,\
                     "Figure frames arrays should lie in [0,1]"
             array = (array*255).astype('uint8')
             pil_list.append(Image.fromarray(array, 'RGB'))
-        pil_list[0].save(f"{self.save_dir}/{self.filename}",
-                       save_all=True, append_images=pil_list[1:],
-                       optimize=False,
-                       duration=40,
-                       loop=0)
+        if timestep:
+           if not os.path.exists(f"{self.save_dir}/{timestep}"):
+               os.makedirs(f"{self.save_dir}/{timestep}")
+           pil_list[0].save(f"{self.save_dir}/{timestep}/{self.filename}",
+                          save_all=True, append_images=pil_list[1:],
+                          optimize=False,
+                          duration=self.n_frames,
+                          loop=0)
+        else:
+            pil_list[0].save(f"{self.save_dir}/{self.filename}",
+                           save_all=True, append_images=pil_list[1:],
+                           optimize=False,
+                           duration=self.n_frames,
+                           loop=0)
 
     def draw_and_save(self, pl_module):
         array_list = self.draw(pl_module)
-        self.save(array_list)
+        timestep = f"epoch_{pl_module.current_epoch}" if self.save_all else None
+        self.save(array_list, timestep=timestep)
 
 class Grid(Figure):
     def __init__(self, cfg, parent_dir, monitor=None, ncol=4):
@@ -112,8 +122,8 @@ class Grid(Figure):
         return fig_array
 
 class AnimationGrid(AnimationFigure):
-    def __init__(self, cfg, parent_dir, monitor=None, ncol=4):
-        super(AnimationGrid, self).__init__(cfg, parent_dir, monitor)
+    def __init__(self, cfg, parent_dir, monitor=None, ncol=4, n_frames=40):
+        super(AnimationGrid, self).__init__(cfg, parent_dir, monitor, n_frames=40)
         self.ncol = ncol
 
     def draw(self, pl_module):
@@ -274,12 +284,12 @@ class ElevationGif(AnimationGrid):
         return rows
 
 class AzimuthGif(AnimationGrid):
-    def __init__(self, cfg, parent_dir, num_objs=16, monitor=None):
-        super(AzimuthGif, self).__init__(cfg, parent_dir, monitor)
-        self.num_objs = num_objs
+    def __init__(self, cfg, parent_dir, ncol=4, monitor=None, n_frames=40):
+        super(AzimuthGif, self).__init__(cfg, parent_dir, monitor, n_frames=40)
+        self.ncol = ncol
 
     def draw(self, pl_module):
-        z = pl_module.noise_distn.sample((self.num_objs, pl_module.cfg.model.noise_dim)
+        z = pl_module.noise_distn.sample((self.ncol**2, pl_module.cfg.model.noise_dim)
                 ).to(pl_module.device)
         azimuth_low = pl_module.cfg.generator.view_args.azimuth_low
         azimuth_high = pl_module.cfg.generator.view_args.azimuth_high
@@ -290,7 +300,7 @@ class AzimuthGif(AnimationGrid):
         for i in torch.linspace(azimuth_low, azimuth_high, self.n_frames):
             view_in = torch.tensor(
                     [i*math.pi/180, fixed_elevation*math.pi/180, 1.0, 0, 0, 0])
-            view_in = view_in.repeat(self.num_objs, 1).to(pl_module.device)
+            view_in = view_in.repeat(self.ncol**2, 1).to(pl_module.device)
             rows = self.create_rows(pl_module, z, view_in)
             grid = self.make_grid(rows)
             frame_list.append(grid)
@@ -299,5 +309,5 @@ class AzimuthGif(AnimationGrid):
 
     def create_rows(self, pl_module, z, view_in):
         samples = pl_module.generator(z, view_in=view_in)
-        rows = samples[:4], samples[4:8], samples[8:12], samples[12:16]
+        rows = [samples[self.ncol*i:self.ncol*(i+1)] for i in range(self.ncol)]
         return rows

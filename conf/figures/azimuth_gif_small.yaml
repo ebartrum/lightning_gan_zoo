@@ -1,0 +1,4 @@
+_target_: core.figures.types.AzimuthGif
+ncol: 2
+n_frames: 8
+

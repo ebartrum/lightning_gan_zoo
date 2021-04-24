@@ -32,8 +32,11 @@ generator:
   channels_img: "${train.channels_img}"
   features_g: "${train.features_gen}"
   nerf_cfg: "${nerf}"
-  azimuth_low: 220
-  azimuth_high: 320
+  view_args:
+    azimuth_low: 220
+    azimuth_high: 320
+    elevation_low: 0
+    elevation_high: 0
 nerf:
   n_pts_per_ray: 16
   n_pts_per_ray_fine: 16
@@ -44,4 +47,5 @@ figure_details:
   save_all: True
 defaults:
   - /figures@figures.sample_grid: sample_grid_small
+  - /figures@figures.azimuth_gif: azimuth_gif_small
   - override /dataset: mnist

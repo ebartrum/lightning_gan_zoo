@@ -17,11 +17,11 @@ from core.utils.coordconv import CoordConv
 
 class Generator(nn.Module):
     def __init__(self, channels_noise, channels_img, features_g,
-            nerf_cfg, azimuth_low, azimuth_high, img_size=64):
+            nerf_cfg, view_args, img_size=64):
         super(Generator, self).__init__()
         self.img_size = img_size
-        self.azimuth_low = azimuth_low
-        self.azimuth_high = azimuth_high
+        self.azimuth_low = view_args.azimuth_low
+        self.azimuth_high = view_args.azimuth_high
         self.nerf_renderer = RadianceFieldRenderer(
             n_pts_per_ray=nerf_cfg.n_pts_per_ray,
             n_pts_per_ray_fine=nerf_cfg.n_pts_per_ray_fine,
@@ -38,21 +38,44 @@ class Generator(nn.Module):
             density_noise_std=0.0,
             latent_z_dim=channels_noise
         )
-    def forward(self, z, sample_res=None):
-        if sample_res is None:
-            sample_res = self.img_size
-        rays_xy = sample_full_xys(batch_size=len(z),
-                img_size=sample_res).to(z.device)
-        batch_size = len(z)
-        azimuth_samples = np.random.randint(self.azimuth_low, self.azimuth_high,
-                                  (batch_size)).astype(np.float)
+
+    def pose_to_cameras(self, view_in, device):
+        azimuth_samples = view_in[:,0]*180/math.pi
+        elevation_samples = torch.zeros_like(azimuth_samples) 
+        R, T = look_at_view_transform(dist=2.7, elev=elevation_samples,
+                azim=azimuth_samples)
+        cameras = FoVOrthographicCameras(
+            R = R, 
+            T = T, 
+            device = device,
+        )
+        return cameras
+        
+
+    def sample_cameras(self, batch_size, device):
+        azimuth_samples = np.random.randint(self.azimuth_low,
+                self.azimuth_high, (batch_size)).astype(np.float)
         R, T = look_at_view_transform(dist=2.7, elev=batch_size*[0],
                 azim=azimuth_samples)
         cameras = FoVOrthographicCameras(
             R = R, 
             T = T, 
-            device = z.device,
+            device = device,
         )
+        return cameras
+
+    def forward(self, z, sample_res=None, view_in=None):
+        if sample_res is None:
+            sample_res = self.img_size
+        rays_xy = sample_full_xys(batch_size=len(z),
+                img_size=sample_res).to(z.device)
+        batch_size = len(z)
+
+        if view_in is None:
+            cameras = self.sample_cameras(batch_size, device=z.device)
+        else:
+            cameras = self.pose_to_cameras(view_in, device=z.device)
+
         rgb_out = self.nerf_renderer(z, cameras, rays_xy)
         out = 2*rgb_out.permute(0,3,1,2)-1
         return out
@@ -160,5 +183,4 @@ class Discriminator(nn.Module):
             x = layer(x)
 
         out = self.final_conv(x)
-        # out = self.final_sigmoid(out)
         return out
