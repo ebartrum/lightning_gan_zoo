@@ -24,6 +24,8 @@ optimisation:
   lr_scheduler: "${lr_scheduler}"
 loss_weight: MISSING
 optimiser: MISSING
+disc_optimiser: "${optimiser}"
+gen_optimiser: "${optimiser}"
 val:
   use_fid: True
   inception_stats_filepath: "${dataset.root}/val_inception_stats.pkl"

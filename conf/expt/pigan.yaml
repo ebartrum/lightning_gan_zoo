@@ -11,15 +11,18 @@ train:
   num_epochs: 25
   criterion:
     _target_: torch.nn.BCEWithLogitsLoss
+optimisation:
+  beta1: 0
+  beta2: 0.9
 loss_weight:
   reg: 10
-optimisation:
-  lr: 1e-4
-  beta1: 0.5
-  beta2: 0.999
-optimiser:
+disc_optimiser:
   _target_: torch.optim.Adam
-  lr: "${optimisation.lr}"
+  lr: 4e-4
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+gen_optimiser:
+  _target_: torch.optim.Adam
+  lr: 5e-5
   betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
 discriminator:
   _target_: core.models.pigan.Discriminator

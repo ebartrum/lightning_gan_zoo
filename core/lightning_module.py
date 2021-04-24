@@ -54,9 +54,9 @@ class BaseGAN(pl.LightningModule):
                 img_grid_fake, self.current_epoch)
 
     def configure_optimizers(self):
-        opt_disc = instantiate(self.cfg.optimiser,
+        opt_disc = instantiate(self.cfg.disc_optimiser,
                     self.discriminator.parameters())
-        opt_gen = instantiate(self.cfg.optimiser,
+        opt_gen = instantiate(self.cfg.gen_optimiser,
                     self.generator.parameters())
         scheduler_disc = instantiate(self.cfg.optimisation.lr_scheduler,
                 optimizer=opt_disc)
@@ -226,20 +226,6 @@ class PIGAN(BaseGAN):
         self.res_update_timesteps = [4000]
         self.train_iter = 0
         self.current_batch_size = cfg.train.batch_size
-
-    def configure_optimizers(self):
-        opt_disc = torch.optim.Adam(self.discriminator.parameters(),
-                lr=4e-4, betas=(0,0.9))
-        opt_gen = torch.optim.Adam(self.generator.parameters(),
-                lr=5e-5, betas=(0,0.9))
-        scheduler_disc = instantiate(self.cfg.optimisation.lr_scheduler,
-                optimizer=opt_disc)
-        scheduler_gen = instantiate(self.cfg.optimisation.lr_scheduler,
-                optimizer=opt_gen)
-        return ({'optimizer': opt_disc, 'lr_scheduler': scheduler_disc,
-                    'frequency': self.cfg.optimisation.disc_freq},
-               {'optimizer': opt_gen, 'lr_scheduler': scheduler_gen,
-                   'frequency': self.cfg.optimisation.gen_freq})
         
     def training_res_schedule_step(self):
         self.train_iter += 1
