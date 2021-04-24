@@ -123,7 +123,7 @@ class Grid(Figure):
 
 class AnimationGrid(AnimationFigure):
     def __init__(self, cfg, parent_dir, monitor=None, ncol=4, n_frames=40):
-        super(AnimationGrid, self).__init__(cfg, parent_dir, monitor, n_frames=40)
+        super(AnimationGrid, self).__init__(cfg, parent_dir, monitor, n_frames=n_frames)
         self.ncol = ncol
 
     def draw(self, pl_module):
@@ -285,7 +285,8 @@ class ElevationGif(AnimationGrid):
 
 class AzimuthGif(AnimationGrid):
     def __init__(self, cfg, parent_dir, ncol=4, monitor=None, n_frames=40):
-        super(AzimuthGif, self).__init__(cfg, parent_dir, monitor, n_frames=40)
+        super(AzimuthGif, self).__init__(cfg, parent_dir,
+                monitor, n_frames=n_frames)
         self.ncol = ncol
 
     def draw(self, pl_module):
