@@ -43,5 +43,5 @@ figure_details:
   fid_callback: False
   save_all: True
 defaults:
-  - /figures@figures.sample_grid: sample_grid
+  - /figures@figures.sample_grid: sample_grid_small
   - override /dataset: mnist

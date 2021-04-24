@@ -131,13 +131,14 @@ class AnimationGrid(AnimationFigure):
 class SampleGrid(Grid):
     def __init__(self, cfg, parent_dir, monitor=None, ncol=4):
         super(SampleGrid, self).__init__(cfg, parent_dir, monitor, ncol)
+        self.ncol = ncol
 
     @torch.no_grad()
     def create_rows(self, pl_module):
-        noise = pl_module.noise_distn.sample((16, pl_module.cfg.model.noise_dim)
+        noise = pl_module.noise_distn.sample((self.ncol**2, pl_module.cfg.model.noise_dim)
                 ).to(pl_module.device)
         fake = pl_module.generator(noise)
-        rows = fake[:4], fake[4:8], fake[8:12], fake[12:16]
+        rows = [fake[self.ncol*i:self.ncol*(i+1)] for i in range(self.ncol)]
         return rows
 
 class AzimuthStep(Grid):
