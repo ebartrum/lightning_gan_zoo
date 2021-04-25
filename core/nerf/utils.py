@@ -120,8 +120,7 @@ def sample_images_at_xys(
 
 def sample_mc_xys(batch_size, n_rays_per_image):
     out = torch.cat([torch.rand(
-                        size=(batch_size,n_rays_per_image, 1),
-                        dtype=torch.float32)
+                        size=(batch_size,n_rays_per_image, 1))
                     * (high - low)
                     + low
                     for low, high in (
@@ -143,10 +142,10 @@ def sample_full_xys(batch_size, img_size):
                         torch.meshgrid(
                             torch.linspace(grid_min_y,
                                 grid_max_y,
-                              img_size, dtype=torch.float32),
+                              img_size),
                             torch.linspace(grid_min_x,
                                 grid_max_x,
-                              img_size, dtype=torch.float32),
+                              img_size),
                         )
                     )
                 ),

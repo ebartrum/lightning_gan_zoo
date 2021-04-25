@@ -56,9 +56,9 @@ def train(cfg: DictConfig) -> None:
 
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
             logger=tb_logger,
-            deterministic=True,
+            deterministic=False,
             fast_dev_run=cfg.debug.fast_dev_run, callbacks=callbacks,
-            resume_from_checkpoint=ckpt_path)    
+            resume_from_checkpoint=ckpt_path, precision=cfg.precision)    
     trainer.fit(model) 
 
 if __name__ == "__main__":

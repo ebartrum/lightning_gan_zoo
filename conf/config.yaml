@@ -16,7 +16,7 @@ train:
   features_gen: 64
   ckpt_dir:
   criterion:
-    _target_: torch.nn.BCELoss
+    _target_: torch.nn.BCEWithLogitsLoss
 optimisation:
   lr: MISSING
   disc_freq: 1
@@ -32,6 +32,7 @@ val:
   fid_n_samples: 5000
 discriminator:
   img_size: "${train.img_size}"
+  final_sigmoid: false
 generator:
   img_size: "${train.img_size}"
 debug:
@@ -42,6 +43,7 @@ figure_details:
     filename: ""
     fid_callback: True
     save_all: False
+precision: 16
 save_ckpts: True
 calc_fid: True
 hydra:

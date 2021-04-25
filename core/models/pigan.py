@@ -111,7 +111,8 @@ class Discriminator(nn.Module):
         init_chan = 64,
         max_chan = 400,
         init_resolution = 32,
-        add_layer_iters = 10000
+        add_layer_iters = 10000,
+        final_sigmoid = False
     ):
         super().__init__()
         resolutions = math.log2(img_size)
@@ -146,7 +147,10 @@ class Discriminator(nn.Module):
             ))
 
         self.final_conv = CoordConv(final_chan, 1, kernel_size = 2)
-        self.final_sigmoid = nn.Sigmoid()
+        if final_sigmoid:
+            self.final_sigmoid = nn.Sigmoid()
+        else:
+            self.final_sigmoid = None
 
         self.add_layer_iters = add_layer_iters
         self.register_buffer('alpha', torch.tensor(0.))
@@ -183,4 +187,6 @@ class Discriminator(nn.Module):
             x = layer(x)
 
         out = self.final_conv(x)
+        if self.final_sigmoid:
+            out = self.final_sigmoid(out)
         return out

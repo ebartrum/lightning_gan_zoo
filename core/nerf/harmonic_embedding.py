@@ -49,14 +49,14 @@ class HarmonicEmbedding(torch.nn.Module):
         if logspace:
             frequencies = 2.0 ** torch.arange(
                 n_harmonic_functions,
-                dtype=torch.float32,
+                # dtype=torch.float,
             )
         else:
             frequencies = torch.linspace(
                 1.0,
                 2.0 ** (n_harmonic_functions - 1),
                 n_harmonic_functions,
-                dtype=torch.float32,
+                # dtype=torch.float,
             )
 
         self.register_buffer("_frequencies", omega0 * frequencies)
