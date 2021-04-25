@@ -5,6 +5,7 @@ from typing import List
 import torch
 from pytorch3d.renderer import MonteCarloRaysampler, NDCGridRaysampler, RayBundle, FoVOrthographicCameras
 from pytorch3d.renderer.cameras import CamerasBase
+from torch.cuda.amp import autocast
 
 from .utils import sample_pdf
 
@@ -50,7 +51,8 @@ def xy_to_ray_bundle(
     )
 
     # unproject the points
-    unprojected = cameras.unproject_points(to_unproject)  # pyre-ignore
+    with autocast(enabled=False):
+        unprojected = cameras.unproject_points(to_unproject)  # pyre-ignore
 
     # split the two planes back
     rays_plane_1_world = unprojected[:, :n_rays_per_image]

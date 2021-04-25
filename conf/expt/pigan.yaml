@@ -48,7 +48,6 @@ calc_fid: False
 figure_details:
   fid_callback: False
   save_all: True
-precision: 32
 defaults:
   - /figures@figures.sample_grid: sample_grid_small
   - /figures@figures.azimuth_gif: azimuth_gif_small
