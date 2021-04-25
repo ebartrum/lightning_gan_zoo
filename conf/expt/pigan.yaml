@@ -8,7 +8,6 @@ model:
 train:
   batch_size: 12
   training_resolution: 16
-  num_epochs: 25
   criterion:
     _target_: torch.nn.BCEWithLogitsLoss
 optimisation:
