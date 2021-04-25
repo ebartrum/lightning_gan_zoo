@@ -222,21 +222,20 @@ class PIGAN(BaseGAN):
         super().__init__(cfg, logging_dir)
         self.resolution_list=self.cfg.resolution_annealing.resolutions
         self.training_resolution = self.resolution_list[0]
+        self.current_batch_size = self.cfg.variable_batch_size.batch_sizes[0]
         
     def train_dataloader(self):
-        batch_size_update_epochs = self.cfg.variable_batch_size.update_epochs
-        batch_sizes = self.cfg.variable_batch_size.batch_sizes
-        current_epoch_less_than_update = [x<=self.current_epoch\
-                for x in batch_size_update_epochs]
-        if True not in current_epoch_less_than_update:
-            batch_size_index = 0
-        else:
-            batch_size_index = current_epoch_less_than_update.index(True)+1
-        batch_size = batch_sizes[batch_size_index]
-        print(f"Batch size for this epoch: {batch_size}")
+        if self.current_epoch in\
+                self.cfg.variable_batch_size.update_epochs:
+            batch_size_index =\
+                    self.cfg.variable_batch_size.update_epochs.index(
+                    self.current_epoch)+1
+            self.current_batch_size = self.cfg.variable_batch_size.\
+                    batch_sizes[batch_size_index]
+        print(f"Batch size for this epoch: {self.current_batch_size}")
         dataset = instantiate(self.cfg.dataset.train, transform=self.transform)
         return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
-                batch_size=batch_size)
+                batch_size=self.current_batch_size)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _ = batch
