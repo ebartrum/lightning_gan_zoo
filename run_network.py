@@ -7,6 +7,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TestTubeLogger
 from core.models.standard_networks import Discriminator, Generator
 from core.callback_inception_metrics import InceptionMetrics
+from core.callback_train_res import TrainingResolutionAnnealing
 import hydra
 from hydra.utils import instantiate, call
 from omegaconf import DictConfig
@@ -52,11 +53,19 @@ def train(cfg: DictConfig) -> None:
                 fake_img_dir=os.path.join(logging_dir,"test_samples"),
                 data_transform=model.transform, fid_name="fid",
                 n_samples=cfg.val.fid_n_samples))
+    if cfg.use_resolution_annealing:
+        callbacks.append(TrainingResolutionAnnealing(
+            resolution_update_epochs=cfg.resolution_annealing.update_epochs,
+            resolution_list=cfg.resolution_annealing.resolutions))
+
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
+    accumulate_grad_batches=\
+            {cfg.resolution_annealing.update_epochs[-1]:4}\
+            if cfg.use_resolution_annealing else 1
 
     trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
-            logger=tb_logger,
-            deterministic=False,
+            logger=tb_logger, accumulate_grad_batches=accumulate_grad_batches,
+            deterministic=False, reload_dataloaders_every_epoch=True,
             fast_dev_run=cfg.debug.fast_dev_run, callbacks=callbacks,
             resume_from_checkpoint=ckpt_path, precision=cfg.precision)    
     trainer.fit(model) 

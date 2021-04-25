@@ -46,6 +46,7 @@ figure_details:
 precision: 16
 save_ckpts: True
 calc_fid: True
+use_resolution_annealing: False
 hydra:
   output_subdir: null
   run:

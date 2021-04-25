@@ -220,38 +220,34 @@ class HOLOGAN(BaseGAN):
 class PIGAN(BaseGAN):
     def __init__(self, cfg, logging_dir):
         super().__init__(cfg, logging_dir)
-        self.max_res = cfg.train.img_size
-        self.starting_res = cfg.train.training_resolution
-        self.current_res = self.starting_res
-        self.res_update_timesteps = [4000]
-        self.train_iter = 0
-        self.current_batch_size = cfg.train.batch_size
+        self.resolution_list=self.cfg.resolution_annealing.resolutions
+        self.training_resolution = self.resolution_list[0]
         
-    def training_res_schedule_step(self):
-        self.train_iter += 1
-        self.discriminator.update_iter_()
-        if self.train_iter in self.res_update_timesteps:
-            if self.current_res < self.max_res:
-                print(f"Increasing training_resolution from " +\
-                        f"{self.current_res} to {self.current_res*2}")
-                self.current_res *= 2
-                self.current_batch_size = self.current_batch_size//4
-            assert self.current_res <= self.max_res
-            self.discriminator.increase_resolution_()
+    def train_dataloader(self):
+        batch_size_update_epochs = self.cfg.variable_batch_size.update_epochs
+        batch_sizes = self.cfg.variable_batch_size.batch_sizes
+        current_epoch_less_than_update = [x<=self.current_epoch\
+                for x in batch_size_update_epochs]
+        if True not in current_epoch_less_than_update:
+            batch_size_index = 0
+        else:
+            batch_size_index = current_epoch_less_than_update.index(True)+1
+        batch_size = batch_sizes[batch_size_index]
+        print(f"Batch size for this epoch: {batch_size}")
+        dataset = instantiate(self.cfg.dataset.train, transform=self.transform)
+        return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
+                batch_size=batch_size)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        training_resolution = self.current_res
         real, _ = batch
-        real = real[:self.current_batch_size]
-
         rays_xy = sample_full_xys(batch_size=len(real),
-                img_size=training_resolution).to(self.device)
+                img_size=self.training_resolution).to(self.device)
         real_sampled = sample_images_at_xys(real.permute(0,2,3,1), rays_xy)
         real_sampled = real_sampled.permute(0,3,1,2)
 
         z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
-        fake = self.generator(z, sample_res=training_resolution)
+        fake = self.generator(z, sample_res=self.training_resolution)
 
         # train discriminator
         if optimizer_idx == 0:
@@ -276,5 +272,5 @@ class PIGAN(BaseGAN):
             out = loss_gen
 
         #Step the training resolution scheduler
-        self.training_res_schedule_step()
+        self.discriminator.update_iter_()
         return out

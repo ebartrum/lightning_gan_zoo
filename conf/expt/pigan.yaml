@@ -44,6 +44,13 @@ nerf:
   n_pts_per_ray_fine: 16
 save_ckpts: False
 calc_fid: False
+use_resolution_annealing: True
+resolution_annealing:
+    update_epochs: [1,2]
+    resolutions: [16,32,64]
+variable_batch_size:
+    update_epochs: "${resolution_annealing.update_epochs}"
+    batch_sizes: [64,16,4]
 figure_details:
   fid_callback: False
   save_all: True
