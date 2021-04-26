@@ -45,9 +45,17 @@ class Siren(nn.Module):
         # FiLM modulation
 
         if exists(gamma):
+            if len(out.shape) == 3:
+                gamma=gamma.unsqueeze(1)
+            elif len(out.shape) == 4:
+                gamma=gamma.unsqueeze(1).unsqueeze(1)
             out = out * gamma
 
         if exists(beta):
+            if len(out.shape) == 3:
+                beta=beta.unsqueeze(1)
+            elif len(out.shape) == 4:
+                beta=beta.unsqueeze(1).unsqueeze(1)
             out = out + beta
 
         out = self.activation(out)
@@ -71,22 +79,28 @@ class EqualLinear(nn.Module):
         return F.linear(input, self.weight * self.lr_mul, bias=self.bias * self.lr_mul)
 
 class MappingNetwork(nn.Module):
-    def __init__(self, *, dim, dim_out, depth = 3, lr_mul = 0.1):
+    def __init__(self, *, dim, dim_out, n_heads=1, depth = 3, lr_mul = 0.1):
         super().__init__()
 
-        layers = []
-        for i in range(depth):
-            layers.extend([EqualLinear(dim, dim, lr_mul), leaky_relu()])
+        layers = [EqualLinear(dim, dim*n_heads, lr_mul), leaky_relu()]
+        for i in range(depth-1):
+            layers.extend([EqualLinear(dim*n_heads, dim*n_heads, lr_mul), leaky_relu()])
 
+        self.n_heads = n_heads
+        self.dim = dim
+        self.dim_out = dim_out
         self.net = nn.Sequential(*layers)
 
-        self.to_gamma = nn.Linear(dim, dim_out)
-        self.to_beta = nn.Linear(dim, dim_out)
+        self.to_gamma = nn.Linear(dim*n_heads, dim_out*n_heads)
+        self.to_beta = nn.Linear(dim*n_heads, dim_out*n_heads)
 
     def forward(self, x):
         x = F.normalize(x, dim = -1)
         x = self.net(x)
-        return self.to_gamma(x), self.to_beta(x)
+        gammas, betas = self.to_gamma(x), self.to_beta(x)
+        gammas = gammas.reshape(-1, self.n_heads, self.dim_out)
+        betas = betas.reshape(-1, self.n_heads, self.dim_out)
+        return gammas, betas
 
 class SirenNet(nn.Module):
     def __init__(self, dim_in, dim_hidden, dim_out, num_layers, w0 = 1., w0_initial = 30., use_bias = True, final_activation = None):
@@ -108,8 +122,9 @@ class SirenNet(nn.Module):
 
         self.last_layer = Siren(dim_in = dim_hidden, dim_out = dim_out, w0 = w0, use_bias = use_bias, activation = final_activation)
 
-    def forward(self, x, gamma, beta):
-        for layer in self.layers:
+    def forward(self, x, gammas, betas):
+        for i, layer in enumerate(self.layers):
+            gamma, beta = gammas[:,i], betas[:,i]
             x = layer(x, gamma, beta)
         return self.last_layer(x)
 
@@ -129,9 +144,17 @@ class SirenRadianceField(torch.nn.Module):
 
         siren_num_layers = 8
         dim_hidden = 64
+
         self.mapping = MappingNetwork(
             dim = latent_z_dim,
-            dim_out = dim_hidden
+            dim_out = dim_hidden,
+            n_heads = siren_num_layers
+        )
+
+        self.rgb_mapping = MappingNetwork(
+            dim = latent_z_dim,
+            dim_out = dim_hidden,
+            n_heads = 1 
         )
 
         self.siren = SirenNet(
@@ -159,18 +182,12 @@ class SirenRadianceField(torch.nn.Module):
         rays_points_world = ray_bundle_to_ray_points(ray_bundle)
         ray_directions = torch.nn.functional.normalize(ray_bundle.directions, dim=-1)
 
-        gamma, beta = self.mapping(z)
+        gammas, betas = self.mapping(z)
+        rgb_gamma, rgb_beta = self.rgb_mapping(z)
 
-        if len(rays_points_world.shape) == 3:
-            gamma=gamma.unsqueeze(1)
-            beta=beta.unsqueeze(1)
-        elif len(rays_points_world.shape) == 4:
-            gamma=gamma.unsqueeze(1).unsqueeze(1)
-            beta=beta.unsqueeze(1).unsqueeze(1)
-
-        x = self.siren(rays_points_world, gamma, beta)
+        x = self.siren(rays_points_world, gammas, betas)
         alpha = self.to_alpha(x)
-        x = self.to_rgb_siren(x, gamma, beta)
+        x = self.to_rgb_siren(x, rgb_gamma[:,0], rgb_beta[:,0])
         rgb = self.to_rgb(x)
 
         rays_densities = torch.sigmoid(alpha)
