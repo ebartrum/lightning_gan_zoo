@@ -4,7 +4,7 @@ model:
   noise_distn: "${noise_distn}"
   lm:
     _target_: core.lightning_module.PIGAN
-  noise_dim: 128
+  noise_dim: 512
 train:
   batch_size: 12
   training_resolution: 16
@@ -39,22 +39,19 @@ generator:
     azimuth_high: 320
     elevation_low: 0
     elevation_high: 0
-    camera_dist: 2.7
+    camera_dist: 0.1
 nerf:
-  n_pts_per_ray: 16
-  n_pts_per_ray_fine: 16
+  n_pts_per_ray: 32
+  n_pts_per_ray_fine: 32
   min_depth: 0.1
   max_depth: 1.0
   stratified: True
   stratified_test: False
   chunk_size: 6000
-  n_harmonic_functions_xyz: 10
-  n_harmonic_functions_dir: 4
-  n_hidden_neurons_xyz: 256
-  n_hidden_neurons_dir: 128
-  n_layers_xyz: 8
   density_noise_std: 0.0
   latent_z_dim: "${model.noise_dim}"
+  siren_dim_hidden: 256
+  siren_num_layers: 6
 save_ckpts: False
 calc_fid: False
 use_resolution_annealing: True
@@ -64,6 +61,7 @@ resolution_annealing:
 variable_batch_size:
     update_epochs: "${resolution_annealing.update_epochs}"
     batch_sizes: [64,16,4]
+    # batch_sizes: [4,4,4] #DEVEL version
 figure_details:
   fid_callback: False
   save_all: True

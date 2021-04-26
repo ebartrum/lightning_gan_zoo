@@ -64,7 +64,7 @@ class Sine(nn.Module):
         return torch.sin(self.w0 * x)
 
 class EqualLinear(nn.Module):
-    def __init__(self, in_dim, out_dim, lr_mul = 0.1, bias = True):
+    def __init__(self, in_dim, out_dim, lr_mul = 1.0, bias = True):
         super().__init__()
         self.weight = nn.Parameter(torch.randn(out_dim, in_dim))
         if bias:
@@ -74,7 +74,7 @@ class EqualLinear(nn.Module):
         return F.linear(input, self.weight * self.lr_mul, bias=self.bias * self.lr_mul)
 
 class MappingNetwork(nn.Module):
-    def __init__(self, *, dim, dim_out, n_heads=1, depth = 3, lr_mul = 0.1):
+    def __init__(self, *, dim, dim_out, n_heads=1, depth = 3, lr_mul = 1.0):
         super().__init__()
 
         layers = [EqualLinear(dim, dim*n_heads, lr_mul), leaky_relu()]
@@ -127,23 +127,15 @@ class SirenRadianceField(torch.nn.Module):
     def __init__(
         self,
         latent_z_dim: int,
-        n_harmonic_functions_xyz: int = 6,
-        n_harmonic_functions_dir: int = 4,
-        n_hidden_neurons_xyz: int = 256,
-        n_hidden_neurons_dir: int = 128,
-        n_layers_xyz: int = 8,
-        append_xyz: List[int] = (5,),
-        **kwargs,
+        num_layers: int,
+        dim_hidden:int
     ):
         super().__init__()
-
-        siren_num_layers = 8
-        dim_hidden = 64
 
         self.mapping = MappingNetwork(
             dim = latent_z_dim,
             dim_out = dim_hidden,
-            n_heads = siren_num_layers
+            n_heads = num_layers
         )
 
         self.rgb_mapping = MappingNetwork(
@@ -156,7 +148,7 @@ class SirenRadianceField(torch.nn.Module):
             dim_in = 3,
             dim_hidden = dim_hidden,
             dim_out = dim_hidden,
-            num_layers = siren_num_layers
+            num_layers = num_layers
         )
 
         self.to_alpha = nn.Linear(dim_hidden, 1)

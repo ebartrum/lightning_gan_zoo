@@ -223,6 +223,33 @@ class PIGAN(BaseGAN):
         self.resolution_list=self.cfg.resolution_annealing.resolutions
         self.training_resolution = self.resolution_list[0]
         self.current_batch_size = self.cfg.variable_batch_size.batch_sizes[0]
+
+    def configure_optimizers(self):
+        from torch.optim.lr_scheduler import LambdaLR
+        opt_disc = instantiate(self.cfg.disc_optimiser,
+                    self.discriminator.parameters())
+        opt_gen = instantiate(self.cfg.gen_optimiser,
+                    self.generator.parameters())
+        scheduler_disc = instantiate(self.cfg.optimisation.lr_scheduler,
+                optimizer=opt_disc)
+
+        lr_decay_span = 10000
+        lr_discr = self.cfg.disc_optimiser.lr
+        target_lr_discr = lr_discr/4
+        lr_gen = self.cfg.gen_optimiser.lr
+        target_lr_gen = lr_gen/5
+        D_decay_fn = lambda i: max(1 - i / lr_decay_span, 0) +\
+                (target_lr_discr / lr_discr) * min(i / lr_decay_span, 1)
+        G_decay_fn = lambda i: max(1 - i / lr_decay_span, 0) +\
+                (target_lr_gen / lr_gen) * min(i / lr_decay_span, 1)
+
+        scheduler_disc = LambdaLR(opt_disc, D_decay_fn)
+        scheduler_gen = LambdaLR(opt_gen, G_decay_fn)
+
+        return ({'optimizer': opt_disc, 'lr_scheduler': scheduler_disc,
+                    'frequency': self.cfg.optimisation.disc_freq},
+               {'optimizer': opt_gen, 'lr_scheduler': scheduler_gen,
+                   'frequency': self.cfg.optimisation.gen_freq})
         
     def train_dataloader(self):
         if self.current_epoch in\
