@@ -2,7 +2,7 @@ _target_: torchvision.datasets.MNIST
 n_channels: 1
 parent_directory: "${filepaths.mnist_parent_directory}"
 root: "${dataset.parent_directory}/MNIST"
-download: False
+download: true
 train:
   root: "${dataset.parent_directory}"
   _target_: "${dataset._target_}"
