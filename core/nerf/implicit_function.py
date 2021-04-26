@@ -7,9 +7,6 @@ from torch import nn
 from torch.nn import functional as F
 import math
 
-def _xavier_init(linear):
-    torch.nn.init.xavier_uniform_(linear.weight.data)
-
 def leaky_relu(p = 0.2):
     return nn.LeakyReLU(p)
 
@@ -41,9 +38,7 @@ class Siren(nn.Module):
 
     def forward(self, x, gamma = None, beta = None):
         out =  F.linear(x, self.weight, self.bias)
-
         # FiLM modulation
-
         if exists(gamma):
             if len(out.shape) == 3:
                 gamma=gamma.unsqueeze(1)
