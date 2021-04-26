@@ -56,4 +56,3 @@ defaults:
   - /figures@figures.elevation_gif: elevation_gif
   - override /noise_distn: uniform
   - override /lr_scheduler: hologan
-  - override /dataset: mnist

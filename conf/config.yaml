@@ -54,7 +54,7 @@ hydra:
   job_logging:
     disable_existing_loggers: false
 defaults:
- - dataset: MISSING
+ - dataset: celeb_a
  - filepaths: local
  - noise_distn: normal
  - lr_scheduler: step_lr

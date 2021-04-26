@@ -57,4 +57,3 @@ figure_details:
 defaults:
   - /figures@figures.sample_grid: sample_grid_small
   - /figures@figures.azimuth_gif: azimuth_gif_small
-  - override /dataset: mnist

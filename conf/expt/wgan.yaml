@@ -28,4 +28,3 @@ optimiser:
 defaults:
   - /figures@figures.sample_grid: sample_grid
   - /figures@figures.interpolation: interpolation
-  - override /dataset: mnist
