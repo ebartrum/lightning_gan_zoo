@@ -22,27 +22,29 @@ class Generator(nn.Module):
         self.img_size = img_size
         self.azimuth_low = view_args.azimuth_low
         self.azimuth_high = view_args.azimuth_high
+        self.camera_dist = view_args.camera_dist
         self.nerf_renderer = RadianceFieldRenderer(
             n_pts_per_ray=nerf_cfg.n_pts_per_ray,
             n_pts_per_ray_fine=nerf_cfg.n_pts_per_ray_fine,
-            min_depth=0.1,
-            max_depth=3.0,
-            stratified=True,
-            stratified_test=False,
-            chunk_size=6000,
-            n_harmonic_functions_xyz=10,
-            n_harmonic_functions_dir=4,
-            n_hidden_neurons_xyz=256,
-            n_hidden_neurons_dir=128,
-            n_layers_xyz=8,
-            density_noise_std=0.0,
-            latent_z_dim=channels_noise
+            min_depth=nerf_cfg.min_depth,
+            max_depth=nerf_cfg.max_depth,
+            stratified=nerf_cfg.stratified,
+            stratified_test=nerf_cfg.stratified_test,
+            chunk_size=nerf_cfg.chunk_size,
+            n_harmonic_functions_xyz=nerf_cfg.n_harmonic_functions_xyz,
+            n_harmonic_functions_dir=nerf_cfg.n_harmonic_functions_dir,
+            n_hidden_neurons_xyz=nerf_cfg.n_hidden_neurons_xyz,
+            n_hidden_neurons_dir=nerf_cfg.n_hidden_neurons_dir,
+            n_layers_xyz=nerf_cfg.n_layers_xyz,
+            density_noise_std=nerf_cfg.density_noise_std,
+            latent_z_dim=nerf_cfg.latent_z_dim
         )
 
     def pose_to_cameras(self, view_in, device):
         azimuth_samples = view_in[:,0]*180/math.pi
         elevation_samples = torch.zeros_like(azimuth_samples) 
-        R, T = look_at_view_transform(dist=2.7, elev=elevation_samples,
+        R, T = look_at_view_transform(dist=self.camera_dist,
+                elev=elevation_samples,
                 azim=azimuth_samples)
         cameras = FoVOrthographicCameras(
             R = R, 
@@ -55,7 +57,7 @@ class Generator(nn.Module):
     def sample_cameras(self, batch_size, device):
         azimuth_samples = np.random.randint(self.azimuth_low,
                 self.azimuth_high, (batch_size)).astype(np.float)
-        R, T = look_at_view_transform(dist=2.7, elev=batch_size*[0],
+        R, T = look_at_view_transform(dist=self.camera_dist, elev=batch_size*[0],
                 azim=azimuth_samples)
         cameras = FoVOrthographicCameras(
             R = R, 

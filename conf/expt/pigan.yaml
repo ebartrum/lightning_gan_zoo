@@ -39,9 +39,22 @@ generator:
     azimuth_high: 320
     elevation_low: 0
     elevation_high: 0
+    camera_dist: 2.7
 nerf:
   n_pts_per_ray: 16
   n_pts_per_ray_fine: 16
+  min_depth: 0.1
+  max_depth: 3.0
+  stratified: True
+  stratified_test: False
+  chunk_size: 6000
+  n_harmonic_functions_xyz: 10
+  n_harmonic_functions_dir: 4
+  n_hidden_neurons_xyz: 256
+  n_hidden_neurons_dir: 128
+  n_layers_xyz: 8
+  density_noise_std: 0.0
+  latent_z_dim: "${model.noise_dim}"
 save_ckpts: False
 calc_fid: False
 use_resolution_annealing: True
