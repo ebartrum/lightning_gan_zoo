@@ -41,8 +41,8 @@ generator:
     elevation_high: 0
     camera_dist: 0.1
 nerf:
-  n_pts_per_ray: 32
-  n_pts_per_ray_fine: 32
+  n_pts_per_ray: 16
+  n_pts_per_ray_fine: 16
   min_depth: 0.1
   max_depth: 1.0
   stratified: True

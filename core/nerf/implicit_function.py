@@ -63,23 +63,23 @@ class Sine(nn.Module):
     def forward(self, x):
         return torch.sin(self.w0 * x)
 
-class EqualLinear(nn.Module):
-    def __init__(self, in_dim, out_dim, lr_mul = 1.0, bias = True):
-        super().__init__()
-        self.weight = nn.Parameter(torch.randn(out_dim, in_dim))
-        if bias:
-            self.bias = nn.Parameter(torch.zeros(out_dim))
-        self.lr_mul = lr_mul
-    def forward(self, input):
-        return F.linear(input, self.weight * self.lr_mul, bias=self.bias * self.lr_mul)
+# class EqualLinear(nn.Module):
+#     def __init__(self, in_dim, out_dim, lr_mul = 0.1, bias = True):
+#         super().__init__()
+#         self.weight = nn.Parameter(torch.randn(out_dim, in_dim))
+#         if bias:
+#             self.bias = nn.Parameter(torch.zeros(out_dim))
+#         self.lr_mul = lr_mul
+#     def forward(self, input):
+#         return F.linear(input, self.weight * self.lr_mul, bias=self.bias * self.lr_mul)
 
 class MappingNetwork(nn.Module):
-    def __init__(self, *, dim, dim_out, n_heads=1, depth = 3, lr_mul = 1.0):
+    def __init__(self, dim, dim_out, n_heads=1, depth = 3):
         super().__init__()
 
-        layers = [EqualLinear(dim, dim*n_heads, lr_mul), leaky_relu()]
+        layers = [nn.Linear(dim, dim*n_heads), leaky_relu()]
         for i in range(depth-1):
-            layers.extend([EqualLinear(dim*n_heads, dim*n_heads, lr_mul), leaky_relu()])
+            layers.extend([nn.Linear(dim*n_heads, dim*n_heads), leaky_relu()])
 
         self.n_heads = n_heads
         self.dim = dim
