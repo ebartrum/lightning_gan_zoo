@@ -4,7 +4,7 @@ This is an unofficial project and work in progress. **Model correctness is not g
 
 Usage examples:<br/>
 ```python run_network.py +expt=dc_gan dataset=celeb_a```<br/>
-```python run_network.py +expt=wgan dataset=mnist calc_fid=False val.use_fid=False figure_details.fid_callback=False #Don't use FID for MNIST``` <br/>
+```python run_network.py +expt=wgan dataset=mnist calc_fid=False val.use_fid=False figure_details.fid_callback=False``` (Don't use FID for MNIST) <br/>
 ```python run_network.py +expt=wgan_gp dataset=celeb_a```<br/>
 ```python run_network.py +expt=gan_stability_r1 dataset=celeb_a```<br/>
 ```python run_network.py +expt=hologan dataset=celeb_a```<br/>
