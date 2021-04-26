@@ -161,7 +161,7 @@ class SirenRadianceField(torch.nn.Module):
 
         self.to_alpha = nn.Linear(dim_hidden, 1)
         self.to_rgb_siren = Siren(
-                dim_in = dim_hidden,
+                dim_in = dim_hidden+3,
                 dim_out = dim_hidden
             )
 
@@ -176,12 +176,16 @@ class SirenRadianceField(torch.nn.Module):
     ):
         rays_points_world = ray_bundle_to_ray_points(ray_bundle)
         ray_directions = torch.nn.functional.normalize(ray_bundle.directions, dim=-1)
+        ray_directions = ray_directions.unsqueeze(2).expand(
+                rays_points_world.shape)
+        
 
         gammas, betas = self.mapping(z)
         rgb_gamma, rgb_beta = self.rgb_mapping(z)
 
         x = self.siren(rays_points_world, gammas, betas)
         alpha = self.to_alpha(x)
+        x = torch.cat((x,ray_directions), -1)
         x = self.to_rgb_siren(x, rgb_gamma[:,0], rgb_beta[:,0])
         rgb = self.to_rgb(x)
 
