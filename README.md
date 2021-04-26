@@ -3,13 +3,13 @@ GAN models (including 3D controllable models) implemented with [Pytorch Lightnin
 This is an unofficial project and work in progress. **Model correctness is not guaranteed.**
 
 Usage examples:<br/>
-```python train.py +expt=dc_gan dataset=celeb_a```<br/>
-```python train.py +expt=wgan dataset=mnist```<br/>
-```python train.py +expt=wgan_gp dataset=celeb_a```<br/>
-```python train.py +expt=gan_stability_r1 dataset=celeb_a```<br/>
-```python train.py +expt=hologan dataset=celeb_a```<br/>
+```python run_network.py +expt=dc_gan dataset=celeb_a```<br/>
+```python run_network.py +expt=wgan dataset=mnist calc_fid=False val.use_fid=False figure_details.fid_callback=False #Don't use FID for MNIST``` <br/>
+```python run_network.py +expt=wgan_gp dataset=celeb_a```<br/>
+```python run_network.py +expt=gan_stability_r1 dataset=celeb_a```<br/>
+```python run_network.py +expt=hologan dataset=celeb_a```<br/>
 
-By default, the **FID** score will be monitored on the validation set during the validation step. Model checkpoints are saved when the best **FID** score is attained.
+By default, the **FID** score will be monitored on the validation set during the validation step. Model checkpoints are saved when the best **FID** score is attained. Note that **FID** is not valid for MNIST dataset training due to single channel output.
 Generator samples and latent space interpolations are saved to the output directory. Varying view outputs saved for 3D controllable models.
 
 ### Models currently supported
