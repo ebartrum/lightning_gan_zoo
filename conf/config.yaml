@@ -2,7 +2,6 @@
 name: MISSING
 version:
 num_gpus: 1
-accelerator: 
 model:
   lm:
     _target_: core.lightning_module.BaseGAN

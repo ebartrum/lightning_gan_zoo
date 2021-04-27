@@ -1,7 +1,6 @@
 # @package _global_
 name: pigan
 num_gpus: 8
-accelerator: dp
 model:
   noise_distn: "${noise_distn}"
   lm:
