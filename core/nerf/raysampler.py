@@ -291,7 +291,7 @@ class NeRFRaysampler(torch.nn.Module):
 
         if chunksize is None:
             chunksize = n_pixels
-        batched_chunksize = chunksize//batch_size
+        batched_chunksize = math.ceil(chunksize/batch_size)
         start = chunk_idx * batched_chunksize# * batch_size
         end = min(start + batched_chunksize, n_pixels)
         sel_rays = torch.arange(
