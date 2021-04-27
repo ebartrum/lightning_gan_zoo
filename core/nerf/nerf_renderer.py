@@ -40,6 +40,11 @@ class RadianceFieldRenderer(torch.nn.Module):
         # Init the EA raymarcher used by both passes.
         raymarcher = EmissionAbsorptionNeRFRaymarcher()
 
+        rad_field = SirenRadianceField(
+                latent_z_dim=latent_z_dim,
+                num_layers=siren_num_layers,
+                dim_hidden=siren_dim_hidden
+            )
         for render_pass in ("coarse", "fine"):
             if render_pass == "coarse":
                 # Initialize the coarse raysampler.
@@ -67,11 +72,11 @@ class RadianceFieldRenderer(torch.nn.Module):
             )
 
             # Instantiate the fine/coarse SirenRadianceField module.
-            self._implicit_function[render_pass] = SirenRadianceField(
-                latent_z_dim=latent_z_dim,
-                num_layers=siren_num_layers,
-                dim_hidden=siren_dim_hidden
-            )
+            self._implicit_function[render_pass] = rad_field #SirenRadianceField(
+                # latent_z_dim=latent_z_dim,
+                # num_layers=siren_num_layers,
+                # dim_hidden=siren_dim_hidden
+            # )
 
         self._density_noise_std = density_noise_std
         self.chunk_size = chunk_size
