@@ -31,11 +31,8 @@ class Generator(nn.Module):
             stratified=nerf_cfg.stratified,
             stratified_test=nerf_cfg.stratified_test,
             chunk_size=nerf_cfg.chunk_size,
-            n_harmonic_functions_xyz=nerf_cfg.n_harmonic_functions_xyz,
-            n_harmonic_functions_dir=nerf_cfg.n_harmonic_functions_dir,
-            n_hidden_neurons_xyz=nerf_cfg.n_hidden_neurons_xyz,
-            n_hidden_neurons_dir=nerf_cfg.n_hidden_neurons_dir,
-            n_layers_xyz=nerf_cfg.n_layers_xyz,
+            siren_dim_hidden=nerf_cfg.siren_dim_hidden,
+            siren_num_layers=nerf_cfg.siren_num_layers,
             density_noise_std=nerf_cfg.density_noise_std,
             latent_z_dim=nerf_cfg.latent_z_dim
         )

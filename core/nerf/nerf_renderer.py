@@ -26,12 +26,8 @@ class RadianceFieldRenderer(torch.nn.Module):
         stratified_test: bool,
         chunk_size: int,
         latent_z_dim: int,
-        n_harmonic_functions_xyz: int = 6,
-        n_harmonic_functions_dir: int = 4,
-        n_hidden_neurons_xyz: int = 256,
-        n_hidden_neurons_dir: int = 128,
-        n_layers_xyz: int = 8,
-        append_xyz: List[int] = (5,),
+        siren_dim_hidden: int,
+        siren_num_layers: int,
         density_noise_std: float = 0.0,
     ):
         super().__init__()
@@ -72,13 +68,9 @@ class RadianceFieldRenderer(torch.nn.Module):
 
             # Instantiate the fine/coarse SirenRadianceField module.
             self._implicit_function[render_pass] = SirenRadianceField(
-                n_harmonic_functions_xyz=n_harmonic_functions_xyz,
-                n_harmonic_functions_dir=n_harmonic_functions_dir,
-                n_hidden_neurons_xyz=n_hidden_neurons_xyz,
-                n_hidden_neurons_dir=n_hidden_neurons_dir,
-                n_layers_xyz=n_layers_xyz,
-                append_xyz=append_xyz,
-                latent_z_dim=latent_z_dim
+                latent_z_dim=latent_z_dim,
+                num_layers=siren_num_layers,
+                dim_hidden=siren_dim_hidden
             )
 
         self._density_noise_std = density_noise_std

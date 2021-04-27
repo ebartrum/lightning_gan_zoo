@@ -11,6 +11,7 @@ from abc import abstractmethod
 import numpy as np
 import math
 from core.nerf.utils import sample_images_at_xys, sample_full_xys
+from torch.nn import functional as F
 
 class BaseGAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
@@ -223,6 +224,33 @@ class PIGAN(BaseGAN):
         self.resolution_list=self.cfg.resolution_annealing.resolutions
         self.training_resolution = self.resolution_list[0]
         self.current_batch_size = self.cfg.variable_batch_size.batch_sizes[0]
+
+    def configure_optimizers(self):
+        from torch.optim.lr_scheduler import LambdaLR
+        opt_disc = instantiate(self.cfg.disc_optimiser,
+                    self.discriminator.parameters())
+        opt_gen = instantiate(self.cfg.gen_optimiser,
+                    self.generator.parameters())
+        scheduler_disc = instantiate(self.cfg.optimisation.lr_scheduler,
+                optimizer=opt_disc)
+
+        lr_decay_span = 10000
+        lr_discr = self.cfg.disc_optimiser.lr
+        target_lr_discr = lr_discr/4
+        lr_gen = self.cfg.gen_optimiser.lr
+        target_lr_gen = lr_gen/5
+        D_decay_fn = lambda i: max(1 - i / lr_decay_span, 0) +\
+                (target_lr_discr / lr_discr) * min(i / lr_decay_span, 1)
+        G_decay_fn = lambda i: max(1 - i / lr_decay_span, 0) +\
+                (target_lr_gen / lr_gen) * min(i / lr_decay_span, 1)
+
+        scheduler_disc = LambdaLR(opt_disc, D_decay_fn)
+        scheduler_gen = LambdaLR(opt_gen, G_decay_fn)
+
+        return ({'optimizer': opt_disc, 'lr_scheduler': scheduler_disc,
+                    'frequency': self.cfg.optimisation.disc_freq},
+               {'optimizer': opt_gen, 'lr_scheduler': scheduler_gen,
+                   'frequency': self.cfg.optimisation.gen_freq})
         
     def train_dataloader(self):
         if self.current_epoch in\
@@ -252,21 +280,23 @@ class PIGAN(BaseGAN):
         if optimizer_idx == 0:
             real_sampled.requires_grad_()
             disc_real = self.discriminator(real_sampled).reshape(-1)
-            loss_disc_real = self.criterion(disc_real,
-                    torch.ones_like(disc_real))
+            # loss_disc_real = self.criterion(disc_real,
+            #         torch.ones_like(disc_real))
             disc_fake = self.discriminator(fake.clone().detach()).reshape(-1)
-            loss_disc_fake = self.criterion(disc_fake,
-                    torch.zeros_like(disc_fake))
+            # loss_disc_fake = self.criterion(disc_fake,
+            #         torch.zeros_like(disc_fake))
+            divergence = (F.relu(1 + disc_real) + F.relu(1 - disc_fake)).mean()
             r1_reg = self.cfg.loss_weight.reg * compute_grad2(
                     disc_real, real_sampled).mean()
-            loss_disc = r1_reg + (loss_disc_real + loss_disc_fake) 
+            loss_disc = r1_reg + divergence
             self.log('train/d_loss', loss_disc)
             out = loss_disc
 
         # train generator
         if optimizer_idx == 1:
             output = self.discriminator(fake).reshape(-1)
-            loss_gen = self.criterion(output, torch.ones_like(output))
+            # loss_gen = self.criterion(output, torch.ones_like(output))
+            loss_gen = output.mean()
             self.log('train/g_loss', loss_gen)
             out = loss_gen
 
