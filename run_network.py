@@ -63,8 +63,9 @@ def train(cfg: DictConfig) -> None:
             {cfg.resolution_annealing.update_epochs[-1]:4}\
             if cfg.use_resolution_annealing else 1
 
-    trainer = pl.Trainer(gpus=1, max_epochs=cfg.train.num_epochs,
-            logger=tb_logger, accumulate_grad_batches=accumulate_grad_batches,
+    trainer = pl.Trainer(gpus=cfg.num_gpus, accelerator=cfg.accelerator,
+            max_epochs=cfg.train.num_epochs, logger=tb_logger,
+            accumulate_grad_batches=accumulate_grad_batches,
             deterministic=False, reload_dataloaders_every_epoch=True,
             fast_dev_run=cfg.debug.fast_dev_run, callbacks=callbacks,
             resume_from_checkpoint=ckpt_path, precision=cfg.precision)    
