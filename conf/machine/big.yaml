@@ -1,0 +1,21 @@
+# @package _global_
+num_gpus: 8
+train:
+  img_size: 128
+model:
+  noise_dim: 512
+nerf:
+  n_pts_per_ray: 32
+  n_pts_per_ray_fine: 32
+  chunk_size: 65536
+  siren_dim_hidden: 256
+  siren_num_layers: 6
+variable_batch_size:
+    update_epochs: "${resolution_annealing.update_epochs}"
+    batch_sizes: [128,64,16]
+resolution_annealing:
+    update_epochs: [200,400]
+    resolutions: [32,64,128]
+defaults:
+  - /figures@figures.sample_grid: sample_grid
+  - /figures@figures.azimuth_gif: azimuth_gif

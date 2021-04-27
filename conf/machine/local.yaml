@@ -1,0 +1,19 @@
+# @package _global_
+train:
+  img_size: 64
+model:
+  noise_dim: 128
+nerf:
+  n_pts_per_ray: 16 
+  n_pts_per_ray_fine: 16
+  chunk_size: 8192
+  siren_dim_hidden: 256
+  siren_num_layers: 6
+variable_batch_size:
+    update_epochs: "${resolution_annealing.update_epochs}"
+    batch_sizes: [4,4,4]
+resolution_annealing:
+    update_epochs: [200,400]
+    resolutions: [16,32,64]
+defaults:
+  - /figures@figures.sample_grid: sample_grid_small
