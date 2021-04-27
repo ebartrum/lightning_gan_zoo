@@ -12,6 +12,7 @@ from PIL import Image
 from core.utils.utils import interpolate_sphere
 from copy import deepcopy
 import math
+from pytorch_lightning.utilities import rank_zero_only
 
 class Figure(Callback):
     def __init__(self, cfg, parent_dir, monitor=None):
@@ -32,6 +33,7 @@ class Figure(Callback):
         """
         pass
 
+    @rank_zero_only
     def save(self, array, timestep=None):
         assert array.min()>=0 and array.max()<=1,\
                 "Figure array should lie in [0,1]"
@@ -79,6 +81,7 @@ class AnimationFigure(Figure):
         """
         pass
 
+    @rank_zero_only
     def save(self, array_list, timestep=None):
         pil_list = []
         for array in array_list:
