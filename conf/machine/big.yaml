@@ -12,7 +12,7 @@ nerf:
   siren_num_layers: 6
 variable_batch_size:
     update_epochs: "${resolution_annealing.update_epochs}"
-    batch_sizes: [128,64,16]
+    batch_sizes: [128,32,8]
 resolution_annealing:
     update_epochs: [200,400]
     resolutions: [32,64,128]
