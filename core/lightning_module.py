@@ -11,6 +11,7 @@ from abc import abstractmethod
 import numpy as np
 import math
 from core.nerf.utils import sample_images_at_xys, sample_full_xys
+from torch.nn import functional as F
 
 class BaseGAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
@@ -279,21 +280,23 @@ class PIGAN(BaseGAN):
         if optimizer_idx == 0:
             real_sampled.requires_grad_()
             disc_real = self.discriminator(real_sampled).reshape(-1)
-            loss_disc_real = self.criterion(disc_real,
-                    torch.ones_like(disc_real))
+            # loss_disc_real = self.criterion(disc_real,
+            #         torch.ones_like(disc_real))
             disc_fake = self.discriminator(fake.clone().detach()).reshape(-1)
-            loss_disc_fake = self.criterion(disc_fake,
-                    torch.zeros_like(disc_fake))
+            # loss_disc_fake = self.criterion(disc_fake,
+            #         torch.zeros_like(disc_fake))
+            divergence = (F.relu(1 + disc_real) + F.relu(1 - disc_fake)).mean()
             r1_reg = self.cfg.loss_weight.reg * compute_grad2(
                     disc_real, real_sampled).mean()
-            loss_disc = r1_reg + (loss_disc_real + loss_disc_fake) 
+            loss_disc = r1_reg + divergence
             self.log('train/d_loss', loss_disc)
             out = loss_disc
 
         # train generator
         if optimizer_idx == 1:
             output = self.discriminator(fake).reshape(-1)
-            loss_gen = self.criterion(output, torch.ones_like(output))
+            # loss_gen = self.criterion(output, torch.ones_like(output))
+            loss_gen = output.mean()
             self.log('train/g_loss', loss_gen)
             out = loss_gen
 
