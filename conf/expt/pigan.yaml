@@ -1,0 +1,64 @@
+# @package _global_
+name: pigan
+model:
+  noise_distn: "${noise_distn}"
+  lm:
+    _target_: core.lightning_module.PIGAN
+  noise_dim: MISSING
+train:
+  training_resolution: 16
+  img_size: MISSING 
+optimisation:
+  beta1: 0
+  beta2: 0.9
+loss_weight:
+  reg: 10
+disc_optimiser:
+  _target_: torch.optim.Adam
+  lr: 4e-4
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+gen_optimiser:
+  _target_: torch.optim.Adam
+  lr: 5e-5
+  betas: ["${optimisation.beta1}", "${optimisation.beta2}"]
+discriminator:
+  _target_: core.models.pigan.Discriminator
+  img_size: "${train.img_size}"
+  init_chan: "${train.features_disc}"
+  init_resolution: "${resolution_annealing.resolutions.0}"
+generator:
+  _target_: core.models.pigan.Generator
+  channels_noise: "${model.noise_dim}"
+  channels_img: "${train.channels_img}"
+  features_g: "${train.features_gen}"
+  nerf_cfg: "${nerf}"
+  view_args:
+    azimuth_low: 220
+    azimuth_high: 320
+    elevation_low: 0
+    elevation_high: 0
+    camera_dist: 0.1
+nerf:
+  n_pts_per_ray: MISSING
+  n_pts_per_ray_fine: MISSING
+  min_depth: 0.1
+  max_depth: 1.0
+  stratified: True
+  stratified_test: False
+  chunk_size: MISSING
+  density_noise_std: 0.0
+  latent_z_dim: "${model.noise_dim}"
+  siren_dim_hidden: MISSING
+  siren_num_layers: MISSING
+save_ckpts: False
+calc_fid: False
+use_resolution_annealing: True
+resolution_annealing:
+    update_epochs: [7,14]
+    resolutions: MISSING
+variable_batch_size:
+    update_epochs: "${resolution_annealing.update_epochs}"
+    batch_sizes: MISSING
+figure_details:
+  fid_callback: False
+  save_all: True
