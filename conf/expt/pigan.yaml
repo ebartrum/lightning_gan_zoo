@@ -39,7 +39,7 @@ generator:
     azimuth_high: 320
     elevation_low: 0
     elevation_high: 0
-    camera_dist: 2.7
+    camera_dist: 0.1
 nerf:
   n_pts_per_ray: 16
   n_pts_per_ray_fine: 16
