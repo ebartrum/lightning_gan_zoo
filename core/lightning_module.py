@@ -25,8 +25,8 @@ class BaseGAN(pl.LightningModule):
             transforms.Resize((cfg.train.img_size,cfg.train.img_size)),
             transforms.ToTensor(),
             transforms.Normalize(
-                [0.5 for _ in range(cfg.train.channels_img)],
-                [0.5 for _ in range(cfg.train.channels_img)])])
+                mean=[cfg.train.data_mean  for _ in range(cfg.train.channels_img)],
+                std=[cfg.train.data_std for _ in range(cfg.train.channels_img)])])
         self.criterion = instantiate(cfg.train.criterion)
         self.noise_distn = instantiate(cfg.model.noise_distn)
         self.fixed_noise = self.noise_distn.sample((8, cfg.model.noise_dim))

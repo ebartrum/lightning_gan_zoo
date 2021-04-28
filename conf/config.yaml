@@ -18,6 +18,8 @@ train:
   ckpt_dir:
   criterion:
     _target_: torch.nn.BCEWithLogitsLoss
+  data_mean: 0.5
+  data_std: 0.5
 optimisation:
   lr: MISSING
   disc_freq: 1

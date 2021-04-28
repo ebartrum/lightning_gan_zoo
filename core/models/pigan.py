@@ -76,7 +76,7 @@ class Generator(nn.Module):
             cameras = self.pose_to_cameras(view_in, device=z.device)
 
         rgb_out = self.nerf_renderer(z, cameras, rays_xy)
-        out = 2*rgb_out.permute(0,3,1,2)-1
+        out = rgb_out.permute(0,3,1,2)
         return out
 
 def leaky_relu(p = 0.2):
