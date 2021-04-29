@@ -336,15 +336,24 @@ class AzimuthGif(AnimationGrid):
         for i in torch.linspace(azimuth_low, azimuth_high, self.n_frames):
             view_in = torch.tensor(
                     [i*math.pi/180, fixed_elevation*math.pi/180, 1.0, 0, 0, 0])
-            view_in = view_in.repeat(self.ncol**2, 1).to(pl_module.device)
-            rows = self.create_rows(pl_module, z, view_in)
+            azimuth_samples = torch.stack([i*math.pi/180]*(self.ncol**2))
+            elevation_samples = torch.zeros_like(azimuth_samples) 
+            R, T = look_at_view_transform(dist=pl_module.generator.camera_dist,
+                    elev=elevation_samples,
+                    azim=azimuth_samples)
+            cameras = FoVOrthographicCameras(
+                R = R, 
+                T = T, 
+                device = pl_module.device,
+            )
+            rows = self.create_rows(pl_module, z, cameras=cameras)
             grid = self.make_grid(rows)
             frame_list.append(grid)
         frame_list.extend(frame_list[::-1]) #forwards then backwards
         return frame_list
 
-    def create_rows(self, pl_module, z, view_in):
-        samples = pl_module.generator(z, view_in=view_in)
+    def create_rows(self, pl_module, z, cameras):
+        samples = pl_module.generator(z, cameras=cameras)
         rows = [samples[self.ncol*i:self.ncol*(i+1)] for i in range(self.ncol)]
         return rows
 
