@@ -265,7 +265,7 @@ class PIGAN(BaseGAN):
         return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
                 batch_size=self.current_batch_size)
 
-    def training_step(self, batch, batch_idx, optimizer_idx):
+    def training_step(self, batch, batch_idx, optimizer_idx, view_in=None):
         real, _ = batch
         rays_xy = sample_full_xys(batch_size=len(real),
                 img_size=self.training_resolution).to(self.device)
@@ -302,7 +302,9 @@ class PIGAN(BaseGAN):
 class ANIGAN(PIGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _, shape_analysis = batch
-        out = super().training_step(batch[:2], batch_idx, optimizer_idx)
+        view_in = None
+        out = super().training_step(batch[:2], batch_idx,
+                optimizer_idx, view_in=view_in)
         return out
 
     def validation_step(self, batch, batch_idx):
