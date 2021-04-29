@@ -14,6 +14,27 @@ from copy import deepcopy
 import math
 from pytorch_lightning.utilities import rank_zero_only
 from hydra.utils import instantiate
+from core.utils.anigan import convert_cam_pred
+from pytorch3d.renderer import (
+    look_at_view_transform,
+    FoVOrthographicCameras, 
+    PointLights, 
+    DirectionalLights, 
+    Materials, 
+    RasterizationSettings, 
+    MeshRenderer, 
+    MeshRasterizer,  
+    SoftPhongShader,
+    TexturesUV,
+    TexturesVertex,
+    PointsRasterizationSettings,
+    PointsRenderer,
+    PulsarPointsRenderer,
+    PointsRasterizer,
+    AlphaCompositor,
+    NormWeightedCompositor
+)
+from pytorch3d.structures import Meshes, Pointclouds
 
 class Figure(Callback):
     def __init__(self, cfg, parent_dir, monitor=None):
@@ -344,5 +365,41 @@ class FullShapeAnalysis(Grid):
 
     @torch.no_grad()
     def create_rows(self, pl_module):
-        rows = [self.img_batch]*4
+        rows = [self.img_batch]*3
+
+        cameras, scale = convert_cam_pred(
+                self.shape_analysis_batch['cam_pred'].to(pl_module.device),
+                device=pl_module.device)
+        raster_settings = RasterizationSettings(
+            image_size=pl_module.cfg.train.img_size,
+            blur_radius=0.0, 
+            faces_per_pixel=1, 
+        )
+
+        lights = PointLights(device=pl_module.device,
+                location=[[0.0, 0.0, -3.0]])
+
+        renderer = MeshRenderer(
+            rasterizer=MeshRasterizer(
+                cameras=cameras, 
+                raster_settings=raster_settings
+            ),
+            shader=SoftPhongShader(
+                device=pl_module.device, 
+                cameras=cameras,
+                lights=lights
+            )
+        )
+
+        verts, faces =\
+                self.shape_analysis_batch['verts'].to(pl_module.device),\
+                self.shape_analysis_batch['faces'].to(pl_module.device)
+        verts = scale.unsqueeze(1).unsqueeze(1)*verts
+        verts_rgb = torch.ones_like(verts)
+        textures = TexturesVertex(verts_features=verts_rgb)
+        mesh = Meshes(verts=verts, faces=faces, textures=textures)
+        rendered = renderer(mesh)[:,:,:,:3].cpu()
+        rendered = rendered.permute(0,3,1,2)
+
+        rows.append(rendered)
         return rows
