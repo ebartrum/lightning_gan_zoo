@@ -362,10 +362,10 @@ class FullShapeAnalysis(Grid):
                 batch_size=n_objs, shuffle=False)
         self.img_batch, _, self.shape_analysis_batch = dataloader.collate_fn(
                 [dataset[i] for i in range(n_objs)])
+        self.n_objs = n_objs
 
     @torch.no_grad()
     def create_rows(self, pl_module):
-        rows = [self.img_batch]*2
 
         cameras, scale = convert_cam_pred(
                 self.shape_analysis_batch['cam_pred'].to(pl_module.device),
@@ -408,6 +408,9 @@ class FullShapeAnalysis(Grid):
         template_rendered = renderer(template_mesh)[:,:,:,:3].cpu()
         template_rendered = template_rendered.permute(0,3,1,2)
 
-        rows.append(rendered)
-        rows.append(template_rendered)
-        return rows
+        z = pl_module.noise_distn.sample((self.n_objs,
+            pl_module.cfg.model.noise_dim)
+                ).to(pl_module.device)
+        generated_samples = pl_module.generator(z,
+                cameras=cameras).cpu()
+        return [self.img_batch, rendered, template_rendered, generated_samples]
