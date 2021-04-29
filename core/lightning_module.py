@@ -305,7 +305,7 @@ class ANIGAN(PIGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _, shape_analysis = batch
         cameras, scale = convert_cam_pred(shape_analysis['cam_pred'],
-                device=self.device)
+                device=self.device) #TODO: use scale
         out = super().training_step(batch[:2], batch_idx,
                 optimizer_idx, cameras=cameras)
         return out
