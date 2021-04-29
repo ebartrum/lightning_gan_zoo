@@ -334,9 +334,7 @@ class AzimuthGif(AnimationGrid):
         
         frame_list = []
         for i in torch.linspace(azimuth_low, azimuth_high, self.n_frames):
-            view_in = torch.tensor(
-                    [i*math.pi/180, fixed_elevation*math.pi/180, 1.0, 0, 0, 0])
-            azimuth_samples = torch.stack([i*math.pi/180]*(self.ncol**2))
+            azimuth_samples = torch.stack([i]*(self.ncol**2))
             elevation_samples = torch.zeros_like(azimuth_samples) 
             R, T = look_at_view_transform(dist=pl_module.generator.camera_dist,
                     elev=elevation_samples,
