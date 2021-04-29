@@ -1,0 +1,2 @@
+_target_: core.figures.types.FullShapeAnalysis
+val_dataset: "${dataset.val}"

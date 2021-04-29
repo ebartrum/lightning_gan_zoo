@@ -46,6 +46,10 @@ figure_details:
     filename: ""
     fid_callback: True
     save_all: False
+    img_size: "${train.img_size}"
+    data_mean: "${train.data_mean}"
+    data_std: "${train.data_std}"
+    channels_img: "${train.channels_img}"
 precision: 16
 save_ckpts: True
 calc_fid: True

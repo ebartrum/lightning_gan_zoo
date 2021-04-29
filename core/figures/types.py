@@ -13,6 +13,7 @@ from core.utils.utils import interpolate_sphere
 from copy import deepcopy
 import math
 from pytorch_lightning.utilities import rank_zero_only
+from hydra.utils import instantiate
 
 class Figure(Callback):
     def __init__(self, cfg, parent_dir, monitor=None):
@@ -324,4 +325,24 @@ class AzimuthGif(AnimationGrid):
     def create_rows(self, pl_module, z, view_in):
         samples = pl_module.generator(z, view_in=view_in)
         rows = [samples[self.ncol*i:self.ncol*(i+1)] for i in range(self.ncol)]
+        return rows
+
+class FullShapeAnalysis(Grid):
+    def __init__(self, cfg, parent_dir, val_dataset, monitor=None, n_objs=4):
+        super(FullShapeAnalysis, self).__init__(cfg, parent_dir, monitor, ncol=4)
+        transform = transforms.Compose([
+            transforms.Resize((cfg.img_size,cfg.img_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[cfg.data_mean  for _ in range(cfg.channels_img)],
+                std=[cfg.data_std for _ in range(cfg.channels_img)])])
+        dataset = instantiate(val_dataset, transform=transform)
+        dataloader = DataLoader(dataset,
+                batch_size=n_objs, shuffle=False)
+        self.img_batch, _, self.shape_analysis_batch = dataloader.collate_fn(
+                [dataset[i] for i in range(n_objs)])
+
+    @torch.no_grad()
+    def create_rows(self, pl_module):
+        rows = [self.img_batch]*4
         return rows
