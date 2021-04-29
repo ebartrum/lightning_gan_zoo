@@ -301,5 +301,10 @@ class PIGAN(BaseGAN):
 
 class ANIGAN(PIGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
-        out = super().training_step(batch, batch_idx, optimizer_idx)
+        real, _, shape_analysis = batch
+        out = super().training_step(batch[:2], batch_idx, optimizer_idx)
         return out
+
+    def validation_step(self, batch, batch_idx):
+        real, _, shape_analysis = batch
+        return {'real': real}

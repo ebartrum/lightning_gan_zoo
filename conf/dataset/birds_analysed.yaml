@@ -1,12 +1,16 @@
 _target_: core.anigan.dataset.AnimalAnalysisFolder
 n_channels: 3
 root: "${filepaths.birds_root}"
+analysis_root: "${filepaths.birds_analysis_root}"
 train:
   root: "${dataset.root}/train"
+  analysis_root: "${dataset.analysis_root}"
   _target_: "${dataset._target_}"
 val:
   root: "${dataset.train.root}"
+  analysis_root: "${dataset.analysis_root}"
   _target_: "${dataset._target_}"
 test:
   root: "${dataset.train.root}"
+  analysis_root: "${dataset.analysis_root}"
   _target_: "${dataset._target_}"
