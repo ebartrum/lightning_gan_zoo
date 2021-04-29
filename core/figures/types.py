@@ -365,7 +365,7 @@ class FullShapeAnalysis(Grid):
 
     @torch.no_grad()
     def create_rows(self, pl_module):
-        rows = [self.img_batch]*3
+        rows = [self.img_batch]*2
 
         cameras, scale = convert_cam_pred(
                 self.shape_analysis_batch['cam_pred'].to(pl_module.device),
@@ -401,5 +401,13 @@ class FullShapeAnalysis(Grid):
         rendered = renderer(mesh)[:,:,:,:3].cpu()
         rendered = rendered.permute(0,3,1,2)
 
+        template_verts = self.shape_analysis_batch['mean_shape'].to(
+                pl_module.device)
+        template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
+        template_mesh = Meshes(verts=template_verts, faces=faces, textures=textures)
+        template_rendered = renderer(template_mesh)[:,:,:,:3].cpu()
+        template_rendered = template_rendered.permute(0,3,1,2)
+
         rows.append(rendered)
+        rows.append(template_rendered)
         return rows
