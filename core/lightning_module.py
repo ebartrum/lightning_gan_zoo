@@ -298,3 +298,8 @@ class PIGAN(BaseGAN):
         #Step the training resolution scheduler
         self.discriminator.update_iter_()
         return out
+
+class ANIGAN(PIGAN):
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        out = super().training_step(batch, batch_idx, optimizer_idx)
+        return out
