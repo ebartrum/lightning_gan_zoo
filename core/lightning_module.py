@@ -6,6 +6,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from core.utils.utils import gradient_penalty, compute_grad2
 from core.utils.utils import init_weights, VerboseShapeExecution
+from core.utils.anigan import convert_cam_pred
 from hydra.utils import instantiate, call
 from abc import abstractmethod
 import numpy as np
@@ -265,7 +266,7 @@ class PIGAN(BaseGAN):
         return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
                 batch_size=self.current_batch_size)
 
-    def training_step(self, batch, batch_idx, optimizer_idx, view_in=None):
+    def training_step(self, batch, batch_idx, optimizer_idx, cameras=None):
         real, _ = batch
         rays_xy = sample_full_xys(batch_size=len(real),
                 img_size=self.training_resolution).to(self.device)
@@ -274,7 +275,8 @@ class PIGAN(BaseGAN):
 
         z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
-        fake = self.generator(z, sample_res=self.training_resolution)
+        fake = self.generator(z, sample_res=self.training_resolution,
+                cameras=cameras)
 
         # train discriminator
         if optimizer_idx == 0:
@@ -302,9 +304,10 @@ class PIGAN(BaseGAN):
 class ANIGAN(PIGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _, shape_analysis = batch
-        view_in = None
+        cameras, scale = convert_cam_pred(shape_analysis['cam_pred'],
+                device=self.device)
         out = super().training_step(batch[:2], batch_idx,
-                optimizer_idx, view_in=view_in)
+                optimizer_idx, cameras=cameras)
         return out
 
     def validation_step(self, batch, batch_idx):

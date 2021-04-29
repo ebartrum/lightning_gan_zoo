@@ -175,7 +175,17 @@ class AzimuthStep(Grid):
             view_in = torch.tensor([i*math.pi/180, fixed_elevation*math.pi/180,
                 1.0, 0, 0, 0])
             view_in = view_in.repeat(self.n_objs, 1)
-            columns.append(pl_module.generator(z, view_in=view_in))
+            azimuth_samples = view_in[:,0]*180/math.pi
+            elevation_samples = torch.zeros_like(azimuth_samples) 
+            R, T = look_at_view_transform(dist=self.camera_dist,
+                    elev=elevation_samples,
+                    azim=azimuth_samples)
+            cameras = FoVOrthographicCameras(
+                R = R, 
+                T = T, 
+                device = pl_module.device,
+            )
+            columns.append(pl_module.generator(z, cameras=cameras)) #TODO: make this work for hologan
         rows = torch.stack(columns).permute(1,0,2,3,4)
         return rows
 

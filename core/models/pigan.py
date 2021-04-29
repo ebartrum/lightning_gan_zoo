@@ -63,17 +63,15 @@ class Generator(nn.Module):
         )
         return cameras
 
-    def forward(self, z, sample_res=None, view_in=None):
+    def forward(self, z, sample_res=None, cameras=None):
         if sample_res is None:
             sample_res = self.img_size
         rays_xy = sample_full_xys(batch_size=len(z),
                 img_size=sample_res).to(z.device)
         batch_size = len(z)
 
-        if view_in is None:
+        if cameras is None:
             cameras = self.sample_cameras(batch_size, device=z.device)
-        else:
-            cameras = self.pose_to_cameras(view_in, device=z.device)
 
         rgb_out = self.nerf_renderer(z, cameras, rays_xy)
         out = rgb_out.permute(0,3,1,2)
