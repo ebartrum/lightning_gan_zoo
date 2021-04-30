@@ -318,6 +318,23 @@ class PIGAN(BaseGAN):
         return out
 
 class ANIGAN(PIGAN):
+    def __init__(self, cfg, logging_dir):
+        super().__init__(cfg, logging_dir)
+        sigma = 1e-4
+        self.lights = PointLights(device=self.device, location=[[0.0, 0.0, -3.0]])
+        raster_settings_silhouette = RasterizationSettings(
+            image_size=self.cfg.train.img_size, 
+            blur_radius=np.log(1. / 1e-4 - 1.)*sigma, 
+            faces_per_pixel=50, 
+        )
+
+        self.renderer_silhouette = MeshRenderer(
+            rasterizer=MeshRasterizer(
+                raster_settings=raster_settings_silhouette
+            ),
+            shader=SoftSilhouetteShader()
+        )
+
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _, shape_analysis = batch
         cameras, scale = convert_cam_pred(shape_analysis['cam_pred'],
@@ -325,35 +342,20 @@ class ANIGAN(PIGAN):
         template_verts = shape_analysis['mean_shape']
         template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
 
-        sigma = 1e-4
-        lights = PointLights(device=self.device, location=[[0.0, 0.0, -3.0]])
-        raster_settings_silhouette = RasterizationSettings(
-            image_size=self.cfg.train.img_size, 
-            blur_radius=np.log(1. / 1e-4 - 1.)*sigma, 
-            faces_per_pixel=50, 
-        )
-
-        renderer_silhouette = MeshRenderer(
-            rasterizer=MeshRasterizer(
-                cameras=cameras, 
-                raster_settings=raster_settings_silhouette
-            ),
-            shader=SoftSilhouetteShader()
-        )
-
         verts_rgb = torch.ones_like(template_verts)
         textures = TexturesVertex(verts_features=verts_rgb.to(self.device))
         mesh = Meshes(verts=template_verts, faces=shape_analysis['faces'], textures=textures)
-
         with autocast(enabled=False):
-            silhouette_images = renderer_silhouette(mesh, cameras=cameras, lights=lights)
+            silhouette_images = self.renderer_silhouette(
+                    mesh, cameras=cameras, lights=self.lights).detach()
 
-        import matplotlib.pyplot as plt
-        silhouette_images = silhouette_images.permute(0,3,1,2)
-        plt.imshow((silhouette_images[0,3]*255).cpu().int())
-        plt.show()
-        plt.imshow((real[0].permute(1,2,0)*255).cpu().int())
-        plt.show()
+        # import matplotlib.pyplot as plt
+        # silhouette_images = silhouette_images.permute(0,3,1,2)
+        # plt.imshow((silhouette_images[0,3]*255).cpu().int())
+        # plt.show()
+        # plt.imshow((real[0].permute(1,2,0)*255).cpu().int())
+        # plt.show()
+
         out = super().training_step(batch[:2], batch_idx,
                 optimizer_idx, cameras=cameras)
         return out
