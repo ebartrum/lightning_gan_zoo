@@ -14,6 +14,22 @@ import math
 from core.nerf.utils import sample_images_at_xys, sample_full_xys
 from torch.nn import functional as F
 from torch.optim.lr_scheduler import LambdaLR
+from pytorch3d.renderer import (
+    look_at_view_transform,
+    OpenGLPerspectiveCameras, 
+    PointLights, 
+    DirectionalLights, 
+    Materials, 
+    RasterizationSettings, 
+    MeshRenderer, 
+    MeshRasterizer,  
+    SoftPhongShader,
+    SoftSilhouetteShader,
+    SoftPhongShader,
+    TexturesVertex
+)
+from pytorch3d.structures import Meshes, Pointclouds
+from torch.cuda.amp import autocast
 
 class BaseGAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
@@ -306,6 +322,34 @@ class ANIGAN(PIGAN):
         real, _, shape_analysis = batch
         cameras, scale = convert_cam_pred(shape_analysis['cam_pred'],
                 device=self.device) #TODO: use scale
+        template_verts = shape_analysis['mean_shape']
+
+        sigma = 1e-4
+        lights = PointLights(device=self.device, location=[[0.0, 0.0, -3.0]])
+        raster_settings_silhouette = RasterizationSettings(
+            image_size=self.cfg.train.img_size, 
+            blur_radius=np.log(1. / 1e-4 - 1.)*sigma, 
+            faces_per_pixel=50, 
+        )
+
+        renderer_silhouette = MeshRenderer(
+            rasterizer=MeshRasterizer(
+                cameras=cameras, 
+                raster_settings=raster_settings_silhouette
+            ),
+            shader=SoftSilhouetteShader()
+        )
+
+        verts_rgb = torch.ones_like(template_verts)
+        textures = TexturesVertex(verts_features=verts_rgb.to(self.device))
+        mesh = Meshes(verts=template_verts, faces=shape_analysis['faces'], textures=textures)
+
+        with autocast(enabled=False):
+            silhouette_images = renderer_silhouette(mesh, cameras=cameras, lights=lights)
+
+        silhouette_images = silhouette_images.permute(0,3,1,2)
+
+        import ipdb;ipdb.set_trace()
         out = super().training_step(batch[:2], batch_idx,
                 optimizer_idx, cameras=cameras)
         return out
