@@ -1,13 +1,13 @@
 # @package _global_
 num_gpus: 8
 train:
-  img_size: 128
+  img_size: 64
 model:
-  noise_dim: 512
+  noise_dim: 128
 nerf:
-  n_pts_per_ray: 32
-  n_pts_per_ray_fine: 32
-  chunk_size: 65536
+  n_pts_per_ray: 16 
+  n_pts_per_ray_fine: 16
+  chunk_size: 8192
   siren_dim_hidden: 256
   siren_num_layers: 6
 variable_batch_size:
@@ -15,7 +15,7 @@ variable_batch_size:
     batch_sizes: [128,32,8]
 resolution_annealing:
     update_epochs: [200,400]
-    resolutions: [32,64,128]
+    resolutions: [16,32,64]
 defaults:
-  - /figures@figures.sample_grid: sample_grid
-  - /figures@figures.azimuth_gif: azimuth_gif
+  - /figures@figures.sample_grid: sample_grid_small
+  - /figures@figures.azimuth_gif: azimuth_gif_small
