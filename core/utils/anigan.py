@@ -10,7 +10,7 @@ def convert_cam_pred(cam_pred, device):
     R[:,1]*=-1
     R[:,0]*=-1
     
-    T = torch.stack([-tx,-ty,5*torch.ones_like(tx)],1)
+    T = torch.stack([-tx,-ty,torch.ones_like(tx)],1)
     R = torch.cat(len(tx)*[R]).to(device)
     newR = quaternion_to_matrix(quats)
     R = torch.inverse(newR)@R
