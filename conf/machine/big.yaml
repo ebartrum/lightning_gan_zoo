@@ -12,9 +12,9 @@ nerf:
   siren_num_layers: 6
 variable_batch_size:
     update_epochs: "${resolution_annealing.update_epochs}"
-    batch_sizes: [16,4,4]
+    batch_sizes: [16,4,3]
 resolution_annealing:
-    update_epochs: [200,400]
+    update_epochs: [300,600]
     resolutions: [32,64,128]
 defaults:
   - /figures@figures.sample_grid: sample_grid_small
