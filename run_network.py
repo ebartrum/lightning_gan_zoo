@@ -59,9 +59,9 @@ def train(cfg: DictConfig) -> None:
             resolution_list=cfg.resolution_annealing.resolutions))
 
     ckpt_path = find_ckpt(cfg.train.ckpt_dir) if cfg.train.ckpt_dir else None
-    accumulate_grad_batches=\
-            {cfg.resolution_annealing.update_epochs[-1]:4}\
-            if cfg.use_resolution_annealing else 1
+    accumulate_grad_batches = 1 if cfg.accumulate_grad_batches==1\
+        else {cfg.accumulate_grad_batches.start_epoch:
+                cfg.accumulate_grad_batches.accumulation_factor}
 
     trainer = pl.Trainer(gpus=cfg.num_gpus, accelerator="ddp",
             max_epochs=cfg.train.num_epochs, logger=tb_logger,

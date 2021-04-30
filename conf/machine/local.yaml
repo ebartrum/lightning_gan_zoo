@@ -15,5 +15,8 @@ variable_batch_size:
 resolution_annealing:
     update_epochs: [200,400]
     resolutions: [16,32,64]
+accumulate_grad_batches:
+    start_epoch: "${resolution_annealing.update_epochs.1}"
+    accumulation_factor: 4
 defaults:
   - /figures@figures.sample_grid: sample_grid_small

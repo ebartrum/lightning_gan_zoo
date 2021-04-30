@@ -54,6 +54,7 @@ precision: 16
 save_ckpts: True
 calc_fid: True
 use_resolution_annealing: False
+accumulate_grad_batches: 1
 hydra:
   output_subdir: null
   run:
