@@ -12,10 +12,13 @@ nerf:
   siren_num_layers: 6
 variable_batch_size:
     update_epochs: "${resolution_annealing.update_epochs}"
-    batch_sizes: [16,4,3]
+    batch_sizes: [16,4,1]
 resolution_annealing:
     update_epochs: [300,600]
     resolutions: [32,64,128]
+accumulate_grad_batches:
+    start_epoch: "${resolution_annealing.update_epochs.1}"
+    accumulation_factor: 4
 defaults:
   - /figures@figures.sample_grid: sample_grid_small
   # - /figures@figures.azimuth_gif: azimuth_gif_small
