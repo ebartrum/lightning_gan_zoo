@@ -323,6 +323,7 @@ class ANIGAN(PIGAN):
         cameras, scale = convert_cam_pred(shape_analysis['cam_pred'],
                 device=self.device) #TODO: use scale
         template_verts = shape_analysis['mean_shape']
+        template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
 
         sigma = 1e-4
         lights = PointLights(device=self.device, location=[[0.0, 0.0, -3.0]])
@@ -347,9 +348,12 @@ class ANIGAN(PIGAN):
         with autocast(enabled=False):
             silhouette_images = renderer_silhouette(mesh, cameras=cameras, lights=lights)
 
+        import matplotlib.pyplot as plt
         silhouette_images = silhouette_images.permute(0,3,1,2)
-
-        import ipdb;ipdb.set_trace()
+        plt.imshow((silhouette_images[0,3]*255).cpu().int())
+        plt.show()
+        plt.imshow((real[0].permute(1,2,0)*255).cpu().int())
+        plt.show()
         out = super().training_step(batch[:2], batch_idx,
                 optimizer_idx, cameras=cameras)
         return out
