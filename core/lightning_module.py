@@ -282,7 +282,8 @@ class PIGAN(BaseGAN):
         return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
                 batch_size=self.current_batch_size)
 
-    def training_step(self, batch, batch_idx, optimizer_idx, cameras=None):
+    def training_step(self, batch, batch_idx, optimizer_idx,
+            cameras=None, ray_scale=None):
         real, _ = batch
         rays_xy = sample_full_xys(batch_size=len(real),
                 img_size=self.training_resolution).to(self.device)
@@ -292,7 +293,7 @@ class PIGAN(BaseGAN):
         z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
         fake = self.generator(z, sample_res=self.training_resolution,
-                cameras=cameras)
+                cameras=cameras, ray_scale=ray_scale)
 
         # train discriminator
         if optimizer_idx == 0:
@@ -357,7 +358,7 @@ class ANIGAN(PIGAN):
         # plt.show()
 
         out = super().training_step(batch[:2], batch_idx,
-                optimizer_idx, cameras=cameras)
+                optimizer_idx, cameras=cameras, ray_scale=scale)
         return out
 
     def validation_step(self, batch, batch_idx):

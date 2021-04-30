@@ -63,11 +63,13 @@ class Generator(nn.Module):
         )
         return cameras
 
-    def forward(self, z, sample_res=None, cameras=None):
+    def forward(self, z, sample_res=None, cameras=None, ray_scale=None):
         if sample_res is None:
             sample_res = self.img_size
         rays_xy = sample_full_xys(batch_size=len(z),
                 img_size=sample_res).to(z.device)
+        if ray_scale is not None:
+            rays_xy /= ray_scale.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
         batch_size = len(z)
 
         if cameras is None:
