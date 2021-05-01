@@ -10,7 +10,7 @@ from pytorch3d.vis.plotly_vis import plot_scene
 from visdom import Visdom
 
 from .implicit_function import SirenRadianceField
-from .raymarcher import EmissionAbsorptionNeRFRaymarcher
+from .raymarcher import EmissionAbsorptionPiganRaymarcher
 from .raysampler import NeRFRaysampler, ProbabilisticRaysampler
 from .utils import calc_mse, calc_psnr
 import math
@@ -38,7 +38,7 @@ class RadianceFieldRenderer(torch.nn.Module):
         self._implicit_function = torch.nn.ModuleDict()
 
         # Init the EA raymarcher used by both passes.
-        raymarcher = EmissionAbsorptionNeRFRaymarcher()
+        raymarcher = EmissionAbsorptionPiganRaymarcher()
 
         rad_field = SirenRadianceField(
                 latent_z_dim=latent_z_dim,
@@ -105,7 +105,7 @@ class RadianceFieldRenderer(torch.nn.Module):
 
         # First evaluate the coarse rendering pass, then the fine one.
         for renderer_pass in ("coarse", "fine"):
-            (rgb, weights), ray_bundle_out = self._renderer[renderer_pass](
+            (rgba, weights), ray_bundle_out = self._renderer[renderer_pass](
                 z=z,
                 cameras=camera,
                 volumetric_function=self._implicit_function[renderer_pass],
@@ -118,18 +118,18 @@ class RadianceFieldRenderer(torch.nn.Module):
             )
 
             if renderer_pass == "coarse":
-                rgb_coarse = rgb
+                rgba_coarse = rgba
                 # Store the weights and the rays of the first rendering pass
                 # for the ensuing importance ray-sampling of the fine render.
                 coarse_ray_bundle = ray_bundle_out
                 coarse_weights = weights
 
             elif renderer_pass == "fine":
-                rgb_fine = rgb
+                rgba_fine = rgba
 
         return {
-            "rgb_fine": rgb_fine,
-            "rgb_coarse": rgb_coarse,
+            "rgba_fine": rgba_fine,
+            "rgba_coarse": rgba_coarse,
             "coarse_rays": type(coarse_ray_bundle)(
                 *[v.detach().cpu() for k, v in coarse_ray_bundle._asdict().items()]
             ),
@@ -157,7 +157,7 @@ class RadianceFieldRenderer(torch.nn.Module):
 
         batch_size, device = len(z), z.device
         n_rays = rays_xy.shape[1:-1].numel()
-        spatial_output_shape = rays_xy.shape[1:-1]+tuple([3])
+        spatial_output_shape = rays_xy.shape[1:-1]+tuple([4])
         n_chunks = int(math.ceil((n_rays * batch_size) / self.chunk_size))
 
         # Process the chunks of rays.
@@ -174,12 +174,12 @@ class RadianceFieldRenderer(torch.nn.Module):
         out = {
             k: torch.cat(
                 [ch_o[k] for ch_o in chunk_outputs], dim=1)
-            for k in ("rgb_fine", "rgb_coarse", "coarse_weights")
+            for k in ("rgba_fine", "rgba_coarse", "coarse_weights")
             }
 
-        for k in ("rgb_fine", "rgb_coarse"):
+        for k in ("rgba_fine", "rgba_coarse"):
             out[k] =  out[k].view(-1,*spatial_output_shape)
         out["coarse_rays"] = self.concat_rays(
                 [ch_o["coarse_rays"] for ch_o in chunk_outputs], dim=1)
             
-        return out['rgb_fine']
+        return out['rgba_fine']

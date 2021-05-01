@@ -7,20 +7,7 @@ from pytorch3d.renderer.implicit.raymarching import (
     _shifted_cumprod,
 )
 
-
-class EmissionAbsorptionNeRFRaymarcher(EmissionAbsorptionRaymarcher):
-    """
-    This is essentially the `pytorch3d.renderer.EmissionAbsorptionRaymarcher`
-    which additionally returns the rendering weights. It also skips returning
-    the computation of the alpha-mask which is, in case of NeRF, equal to 1
-    everywhere.
-
-    The weights are later used in the NeRF pipeline to carry out the importance
-    ray-sampling for the fine rendering pass.
-
-    For more details about the EmissionAbsorptionRaymarcher please refer to
-    the documentation of `pytorch3d.renderer.EmissionAbsorptionRaymarcher`.
-    """
+class EmissionAbsorptionPiganRaymarcher(EmissionAbsorptionRaymarcher):
 
     def forward(
         self,
@@ -64,5 +51,6 @@ class EmissionAbsorptionNeRFRaymarcher(EmissionAbsorptionRaymarcher):
         )
         weights = rays_densities * absorption
         features = (weights[..., None] * rays_features).sum(dim=-2)
+        opacities = 1.0 - torch.prod(1.0 - rays_densities, dim=-1, keepdim=True)
 
-        return features, weights
+        return torch.cat((features, opacities), dim=-1), weights
