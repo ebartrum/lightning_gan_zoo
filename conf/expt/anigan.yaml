@@ -15,6 +15,7 @@ optimisation:
   beta2: 0.9
 loss_weight:
   reg: 10
+  silhouette: 1
 disc_optimiser:
   _target_: torch.optim.Adam
   lr: 4e-4
