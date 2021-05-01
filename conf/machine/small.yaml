@@ -12,7 +12,6 @@ nerf:
 variable_batch_size:
     update_epochs: "${resolution_annealing.update_epochs}"
     batch_sizes: [128,32,8]
-accumulate_grad_batches: {"${resolution_annealing.resolutions.-1}":4}
 resolution_annealing:
     update_epochs: [200,400]
     resolutions: [16,32,64]
