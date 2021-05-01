@@ -313,9 +313,9 @@ class PIGAN(BaseGAN):
                 cameras=cameras, ray_scale=ray_scale)
 
         if optimizer_idx == 0:
-            out = self.pigan_disc_loss(real_sampled, fake)
+            out = self.pigan_disc_loss(real_sampled, fake[:,:3])
         if optimizer_idx == 1:
-            out = self.pigan_gen_loss(fake)
+            out = self.pigan_gen_loss(fake[:,:3])
 
         #Step the training resolution scheduler
         self.discriminator.update_iter_()
@@ -362,8 +362,23 @@ class ANIGAN(PIGAN):
         # plt.imshow((real[0].permute(1,2,0)*255).cpu().int())
         # plt.show()
 
-        out = super().training_step(batch[:2], batch_idx,
-                optimizer_idx, cameras=cameras, ray_scale=scale)
+        rays_xy = sample_full_xys(batch_size=len(real),
+                img_size=self.training_resolution).to(self.device)
+        real_sampled = sample_images_at_xys(real.permute(0,2,3,1), rays_xy)
+        real_sampled = real_sampled.permute(0,3,1,2)
+
+        z = self.noise_distn.sample((len(real),
+                self.cfg.model.noise_dim)).to(self.device)
+        fake = self.generator(z, sample_res=self.training_resolution,
+                cameras=cameras, ray_scale=ray_scale)
+
+        if optimizer_idx == 0:
+            out = self.pigan_disc_loss(real_sampled, fake[:,:3])
+        if optimizer_idx == 1:
+            out = self.pigan_gen_loss(fake[:,:3])
+
+        #Step the training resolution scheduler
+        self.discriminator.update_iter_()
         return out
 
     def validation_step(self, batch, batch_idx):
