@@ -52,6 +52,7 @@ nerf:
   latent_z_dim: "${model.noise_dim}"
   siren_dim_hidden: MISSING
   siren_num_layers: MISSING
+  white_bg: False
 save_ckpts: False
 calc_fid: False
 use_resolution_annealing: True

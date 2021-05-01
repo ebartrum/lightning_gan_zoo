@@ -28,7 +28,8 @@ class RadianceFieldRenderer(torch.nn.Module):
         latent_z_dim: int,
         siren_dim_hidden: int,
         siren_num_layers: int,
-        density_noise_std: float = 0.0,
+        white_bg: bool,
+        density_noise_std: float = 0.0
     ):
         super().__init__()
 
@@ -38,7 +39,7 @@ class RadianceFieldRenderer(torch.nn.Module):
         self._implicit_function = torch.nn.ModuleDict()
 
         # Init the EA raymarcher used by both passes.
-        raymarcher = EmissionAbsorptionPiganRaymarcher()
+        raymarcher = EmissionAbsorptionPiganRaymarcher(white_bg=white_bg)
 
         rad_field = SirenRadianceField(
                 latent_z_dim=latent_z_dim,

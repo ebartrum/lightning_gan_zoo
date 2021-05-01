@@ -9,6 +9,10 @@ from pytorch3d.renderer.implicit.raymarching import (
 
 class EmissionAbsorptionPiganRaymarcher(EmissionAbsorptionRaymarcher):
 
+    def __init__(self, white_bg: bool, surface_thickness: int = 1):
+        super().__init__(surface_thickness)
+        self.white_bg = white_bg
+
     def forward(
         self,
         rays_densities: torch.Tensor,
@@ -52,5 +56,8 @@ class EmissionAbsorptionPiganRaymarcher(EmissionAbsorptionRaymarcher):
         weights = rays_densities * absorption
         features = (weights[..., None] * rays_features).sum(dim=-2)
         opacities = 1.0 - torch.prod(1.0 - rays_densities, dim=-1, keepdim=True)
+
+        if self.white_bg:
+            features = features + (1-opacities)
 
         return torch.cat((features, opacities), dim=-1), weights
