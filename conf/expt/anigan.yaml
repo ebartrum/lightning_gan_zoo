@@ -15,6 +15,7 @@ optimisation:
   beta2: 0.9
 loss_weight:
   reg: 10
+  silhouette: 1
 disc_optimiser:
   _target_: torch.optim.Adam
   lr: 4e-4
@@ -52,6 +53,7 @@ nerf:
   latent_z_dim: "${model.noise_dim}"
   siren_dim_hidden: MISSING
   siren_num_layers: MISSING
+  white_bg: True
 save_ckpts: False
 calc_fid: False
 use_resolution_annealing: True

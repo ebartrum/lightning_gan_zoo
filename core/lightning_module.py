@@ -282,8 +282,25 @@ class PIGAN(BaseGAN):
         return DataLoader(dataset, num_workers=self.cfg.train.num_workers,
                 batch_size=self.current_batch_size)
 
+    def pigan_disc_loss(self, real_sampled, fake):
+        real_sampled.requires_grad_()
+        disc_real = self.discriminator(real_sampled).reshape(-1)
+        disc_fake = self.discriminator(fake.clone().detach()).reshape(-1)
+        divergence = (F.relu(1 + disc_real) + F.relu(1 - disc_fake)).mean()
+        r1_reg = self.cfg.loss_weight.reg * compute_grad2(
+                disc_real, real_sampled).mean()
+        loss_disc = r1_reg + divergence
+        self.log('train/d_loss', loss_disc)
+        return loss_disc
+        
+    def pigan_gen_loss(self, fake):
+        output = self.discriminator(fake).reshape(-1)
+        loss_gen = output.mean()
+        self.log('train/g_loss', loss_gen)
+        return loss_gen
+
     def training_step(self, batch, batch_idx, optimizer_idx,
-            cameras=None, ray_scale=None):
+            cameras=None):
         real, _ = batch
         rays_xy = sample_full_xys(batch_size=len(real),
                 img_size=self.training_resolution).to(self.device)
@@ -293,26 +310,12 @@ class PIGAN(BaseGAN):
         z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
         fake = self.generator(z, sample_res=self.training_resolution,
-                cameras=cameras, ray_scale=ray_scale)
+                cameras=cameras)
 
-        # train discriminator
         if optimizer_idx == 0:
-            real_sampled.requires_grad_()
-            disc_real = self.discriminator(real_sampled).reshape(-1)
-            disc_fake = self.discriminator(fake.clone().detach()).reshape(-1)
-            divergence = (F.relu(1 + disc_real) + F.relu(1 - disc_fake)).mean()
-            r1_reg = self.cfg.loss_weight.reg * compute_grad2(
-                    disc_real, real_sampled).mean()
-            loss_disc = r1_reg + divergence
-            self.log('train/d_loss', loss_disc)
-            out = loss_disc
-
-        # train generator
+            out = self.pigan_disc_loss(real_sampled, fake[:,:3])
         if optimizer_idx == 1:
-            output = self.discriminator(fake).reshape(-1)
-            loss_gen = output.mean()
-            self.log('train/g_loss', loss_gen)
-            out = loss_gen
+            out = self.pigan_gen_loss(fake[:,:3])
 
         #Step the training resolution scheduler
         self.discriminator.update_iter_()
@@ -339,7 +342,9 @@ class ANIGAN(PIGAN):
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _, shape_analysis = batch
         cameras, scale = convert_cam_pred(shape_analysis['cam_pred'],
-                device=self.device) #TODO: use scale
+                device=self.device)
+        scale = torch.ones_like(scale)  #TODO: use scale
+
         template_verts = shape_analysis['mean_shape']
         template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
 
@@ -349,6 +354,7 @@ class ANIGAN(PIGAN):
         with autocast(enabled=False):
             silhouette_images = self.renderer_silhouette(
                     mesh, cameras=cameras, lights=self.lights).detach()
+            silhouette_images = silhouette_images[:,:,:,3].unsqueeze(-1)
 
         # import matplotlib.pyplot as plt
         # silhouette_images = silhouette_images.permute(0,3,1,2)
@@ -357,8 +363,27 @@ class ANIGAN(PIGAN):
         # plt.imshow((real[0].permute(1,2,0)*255).cpu().int())
         # plt.show()
 
-        out = super().training_step(batch[:2], batch_idx,
-                optimizer_idx, cameras=cameras, ray_scale=scale)
+        rays_xy = sample_full_xys(batch_size=len(real),
+                img_size=self.training_resolution).to(self.device)
+        real_sampled = sample_images_at_xys(real.permute(0,2,3,1), rays_xy)
+        real_sampled = real_sampled.permute(0,3,1,2)
+
+        z = self.noise_distn.sample((len(real),
+                self.cfg.model.noise_dim)).to(self.device)
+        fake = self.generator(z, sample_res=self.training_resolution,
+                cameras=cameras, ray_scale=scale)
+
+        if optimizer_idx == 0:
+            out = self.pigan_disc_loss(real_sampled, fake[:,:3])
+        if optimizer_idx == 1:
+            out = self.pigan_gen_loss(fake[:,:3])
+            silhouette_sampled = sample_images_at_xys(
+                    silhouette_images, rays_xy).squeeze(-1)
+            silhouette_loss = ((fake[:,3] - silhouette_sampled)**2).mean()
+            out = out + (self.cfg.loss_weight.silhouette * silhouette_loss)
+
+        #Step the training resolution scheduler
+        self.discriminator.update_iter_()
         return out
 
     def validation_step(self, batch, batch_idx):
