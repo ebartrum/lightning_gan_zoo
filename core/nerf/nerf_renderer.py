@@ -9,7 +9,7 @@ from pytorch3d.structures import Pointclouds
 from pytorch3d.vis.plotly_vis import plot_scene
 from visdom import Visdom
 
-from .implicit_function import SirenRadianceField
+from .implicit_function import SirenRadianceField, SirenSingleShape
 from .raymarcher import EmissionAbsorptionPiganRaymarcher
 from .raysampler import NeRFRaysampler, ProbabilisticRaysampler
 from .utils import calc_mse, calc_psnr
@@ -29,6 +29,7 @@ class RadianceFieldRenderer(torch.nn.Module):
         siren_dim_hidden: int,
         siren_num_layers: int,
         white_bg: bool,
+        single_shape: bool,
         density_noise_std: float = 0.0
     ):
         super().__init__()
@@ -41,11 +42,19 @@ class RadianceFieldRenderer(torch.nn.Module):
         # Init the EA raymarcher used by both passes.
         raymarcher = EmissionAbsorptionPiganRaymarcher(white_bg=white_bg)
 
-        rad_field = SirenRadianceField(
-                latent_z_dim=latent_z_dim,
-                num_layers=siren_num_layers,
-                dim_hidden=siren_dim_hidden
-            )
+        if single_shape:
+            rad_field = SirenSingleShape(
+                    latent_z_dim=latent_z_dim,
+                    num_layers=siren_num_layers,
+                    dim_hidden=siren_dim_hidden
+                )
+        else:
+            rad_field = SirenRadianceField(
+                    latent_z_dim=latent_z_dim,
+                    num_layers=siren_num_layers,
+                    dim_hidden=siren_dim_hidden
+                )
+
         for render_pass in ("coarse", "fine"):
             if render_pass == "coarse":
                 # Initialize the coarse raysampler.

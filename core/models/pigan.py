@@ -35,7 +35,8 @@ class Generator(nn.Module):
             siren_num_layers=nerf_cfg.siren_num_layers,
             density_noise_std=nerf_cfg.density_noise_std,
             latent_z_dim=nerf_cfg.latent_z_dim,
-            white_bg=nerf_cfg.white_bg
+            white_bg=nerf_cfg.white_bg,
+            single_shape=nerf_cfg.single_shape
         )
 
     def pose_to_cameras(self, view_in, device):

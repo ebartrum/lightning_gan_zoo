@@ -117,10 +117,13 @@ class SirenNet(nn.Module):
 
         self.last_layer = Siren(dim_in = dim_hidden, dim_out = dim_out, w0 = w0, use_bias = use_bias, activation = final_activation)
 
-    def forward(self, x, gammas, betas):
+    def forward(self, x, gammas=None, betas=None):
         for i, layer in enumerate(self.layers):
-            gamma, beta = gammas[:,i], betas[:,i]
-            x = layer(x, gamma, beta)
+            if gammas is None and betas is None:
+                x = layer(x)
+            else:
+                gamma, beta = gammas[:,i], betas[:,i]
+                x = layer(x, gamma, beta)
         return self.last_layer(x)
 
 class SirenRadianceField(torch.nn.Module):
@@ -180,6 +183,78 @@ class SirenRadianceField(torch.nn.Module):
         x = torch.cat((x,ray_directions), -1)
         x = self.to_rgb_siren(x, rgb_gamma[:,0], rgb_beta[:,0])
         rgb = self.to_rgb(x)
+
+        rays_densities = torch.sigmoid(alpha)
+        rays_colors = torch.sigmoid(rgb)
+
+        return rays_densities, rays_colors
+
+class SirenSingleShape(torch.nn.Module):
+    def __init__(
+        self,
+        latent_z_dim: int,
+        num_layers: int,
+        dim_hidden:int
+    ):
+        super().__init__()
+
+        self.mapping = MappingNetwork(
+            dim = latent_z_dim,
+            dim_out = dim_hidden,
+            n_heads = num_layers
+        )
+
+        self.rgb_mapping = MappingNetwork(
+            dim = latent_z_dim,
+            dim_out = dim_hidden,
+            n_heads = 1 
+        )
+
+        self.siren = SirenNet(
+            dim_in = 3,
+            dim_hidden = dim_hidden,
+            dim_out = dim_hidden,
+            num_layers = num_layers
+        )
+
+        self.alpha_siren = SirenNet(
+            dim_in = 3,
+            dim_hidden = dim_hidden,
+            dim_out = dim_hidden,
+            num_layers = num_layers
+        )
+
+        self.to_alpha = nn.Linear(dim_hidden, 1)
+
+        self.to_rgb_siren = Siren(
+                dim_in = dim_hidden+3,
+                dim_out = dim_hidden
+            )
+
+        self.to_rgb = nn.Linear(dim_hidden, 3)
+
+    def forward(
+        self,
+        ray_bundle: RayBundle,
+        z: torch.Tensor,
+        density_noise_std: float = 0.0,
+        **kwargs,
+    ):
+        rays_points_world = ray_bundle_to_ray_points(ray_bundle)
+        ray_directions = torch.nn.functional.normalize(ray_bundle.directions, dim=-1)
+        ray_directions = ray_directions.unsqueeze(2).expand(
+                rays_points_world.shape)
+        
+
+        gammas, betas = self.mapping(z)
+        rgb_gamma, rgb_beta = self.rgb_mapping(z)
+
+        x = self.siren(rays_points_world, gammas, betas)
+        x = torch.cat((x,ray_directions), -1)
+        x = self.to_rgb_siren(x, rgb_gamma[:,0], rgb_beta[:,0])
+        rgb = self.to_rgb(x)
+
+        alpha = self.to_alpha(self.alpha_siren(rays_points_world))
 
         rays_densities = torch.sigmoid(alpha)
         rays_colors = torch.sigmoid(rgb)
