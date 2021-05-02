@@ -25,6 +25,7 @@ from pytorch3d.renderer import (
     MeshRenderer, 
     MeshRasterizer,  
     SoftPhongShader,
+    SoftSilhouetteShader,
     TexturesUV,
     TexturesVertex,
     PointsRasterizationSettings,
@@ -35,6 +36,7 @@ from pytorch3d.renderer import (
     NormWeightedCompositor
 )
 from pytorch3d.structures import Meshes, Pointclouds
+from torch.cuda.amp import autocast
 
 class Figure(Callback):
     def __init__(self, cfg, parent_dir, monitor=None):
@@ -370,33 +372,25 @@ class FullShapeAnalysis(Grid):
         self.img_batch, _, self.shape_analysis_batch = dataloader.collate_fn(
                 [dataset[i] for i in range(n_objs)])
         self.n_objs = n_objs
-
-    @torch.no_grad()
-    def create_rows(self, pl_module):
-
-        cameras, scale = convert_cam_pred(
-                self.shape_analysis_batch['cam_pred'].to(pl_module.device),
-                device=pl_module.device)
-        raster_settings = RasterizationSettings(
-            image_size=pl_module.cfg.train.img_size,
+        self.raster_settings = RasterizationSettings(
+            image_size=cfg.img_size,
             blur_radius=0.0, 
             faces_per_pixel=1, 
         )
-
-        lights = PointLights(device=pl_module.device,
+        sigma = 1e-4
+        self.raster_settings_silhouette = RasterizationSettings(
+            image_size=cfg.img_size, 
+            blur_radius=np.log(1. / 1e-4 - 1.)*sigma, 
+            faces_per_pixel=50, 
+        )
+        self.lights = PointLights(
                 location=[[0.0, 0.0, -3.0]])
 
-        renderer = MeshRenderer(
-            rasterizer=MeshRasterizer(
-                cameras=cameras, 
-                raster_settings=raster_settings
-            ),
-            shader=SoftPhongShader(
-                device=pl_module.device, 
-                cameras=cameras,
-                lights=lights
-            )
-        )
+    @torch.no_grad()
+    def create_rows(self, pl_module):
+        cameras, scale = convert_cam_pred(
+                self.shape_analysis_batch['cam_pred'].to(pl_module.device),
+                device=pl_module.device)
 
         verts, faces =\
                 self.shape_analysis_batch['verts'].to(pl_module.device),\
@@ -405,7 +399,27 @@ class FullShapeAnalysis(Grid):
         verts_rgb = torch.ones_like(verts)
         textures = TexturesVertex(verts_features=verts_rgb)
         mesh = Meshes(verts=verts, faces=faces, textures=textures)
-        rendered = renderer(mesh)[:,:,:,:3].cpu()
+        renderer = MeshRenderer(
+            rasterizer=MeshRasterizer(
+                cameras=cameras, 
+                raster_settings=self.raster_settings,
+            ),
+            shader=SoftPhongShader(
+                device=pl_module.device, 
+                cameras=cameras,
+                lights=self.lights.to(pl_module.device)
+            )
+        )
+
+        renderer_silhouette = MeshRenderer(
+            rasterizer=MeshRasterizer(
+                raster_settings=self.raster_settings_silhouette
+            ),
+            shader=SoftSilhouetteShader()
+        )
+
+        
+        rendered = renderer(mesh, cameras=cameras)[:,:,:,:3].cpu()
         rendered = rendered.permute(0,3,1,2)
 
         template_verts = self.shape_analysis_batch['mean_shape'].to(
@@ -415,6 +429,13 @@ class FullShapeAnalysis(Grid):
         template_rendered = renderer(template_mesh)[:,:,:,:3].cpu()
         template_rendered = template_rendered.permute(0,3,1,2)
 
+        with autocast(enabled=False):
+            silhouette_images = renderer_silhouette(
+                    template_mesh, cameras=cameras, lights=self.lights).detach()
+            silhouette_images = silhouette_images[:,:,:,3].unsqueeze(-1)
+            silhouette_images = silhouette_images.permute(0,3,1,2)
+            silhouette_images = torch.cat(3*[silhouette_images],1).cpu()
+
         z = pl_module.noise_distn.sample((self.n_objs,
             pl_module.cfg.model.noise_dim)
                 ).to(pl_module.device)
@@ -423,5 +444,5 @@ class FullShapeAnalysis(Grid):
         generated_rgb, generated_alpha = generated_rgba[:,:3],\
                 generated_rgba[:,3]
         generated_alpha = torch.stack(3*[generated_alpha], dim=1)
-        return [self.img_batch, rendered, template_rendered,
+        return [self.img_batch, rendered, template_rendered, silhouette_images,
                 generated_rgb, generated_alpha]
