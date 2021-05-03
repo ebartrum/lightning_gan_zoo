@@ -381,7 +381,8 @@ class ANIGAN(PIGAN):
         fake = self.generator(z, sample_res=self.training_resolution,
                 cameras=cameras, ray_scale=scale,
                 deformation_field=deformation_field,
-                deformed_verts=shape_analysis['verts'][:,::8])
+                deformed_verts=shape_analysis['verts']\
+                        [:,::self.cfg.nerf.template_subdivision])
 
         if optimizer_idx == 0:
             out = self.pigan_disc_loss(real_sampled, fake[:,:3])
@@ -397,8 +398,9 @@ class ANIGAN(PIGAN):
         return out
 
     def calculate_deformation(self, shape_analysis):
-        verts = shape_analysis['verts'][:,::8]
-        template_verts = shape_analysis['mean_shape'][:,::8]
+        verts = shape_analysis['verts'][:,::self.cfg.nerf.template_subdivision]
+        template_verts =\
+            shape_analysis['mean_shape'][:,::self.cfg.nerf.template_subdivision]
         tps_lambda = 0
         coefficient = tps_functions.find_coefficients(
             verts, template_verts, tps_lambda).detach()
