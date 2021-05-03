@@ -344,14 +344,14 @@ class ANIGAN(PIGAN):
         real, _, shape_analysis = batch
         cameras, scale = convert_cam_pred(shape_analysis['cam_pred'],
                 device=self.device)
-        scale = torch.ones_like(scale)  #TODO: use scale
+        # scale = torch.ones_like(scale)  #TODO: use scale
 
         template_verts = shape_analysis['mean_shape']
         template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
 
         verts_rgb = torch.ones_like(template_verts)
         textures = TexturesVertex(verts_features=verts_rgb.to(self.device))
-        mesh = Meshes(verts=shape_analysis['verts'],
+        mesh = Meshes(verts=scale.unsqueeze(1).unsqueeze(1)*shape_analysis['verts'],
                 faces=shape_analysis['faces'],
                 textures=textures)
 

@@ -395,7 +395,7 @@ class FullShapeAnalysis(Grid):
         verts, faces =\
                 self.shape_analysis_batch['verts'].to(pl_module.device),\
                 self.shape_analysis_batch['faces'].to(pl_module.device)
-        # verts = scale.unsqueeze(1).unsqueeze(1)*verts
+        verts = scale.unsqueeze(1).unsqueeze(1)*verts
         verts_rgb = torch.ones_like(verts)
         textures = TexturesVertex(verts_features=verts_rgb)
         mesh = Meshes(verts=verts, faces=faces, textures=textures)
@@ -424,7 +424,7 @@ class FullShapeAnalysis(Grid):
 
         template_verts = self.shape_analysis_batch['mean_shape'].to(
                 pl_module.device)
-        # template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
+        template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
         template_mesh = Meshes(verts=verts, faces=faces, textures=textures)
         template_rendered = renderer(template_mesh)[:,:,:,:3].cpu()
         template_rendered = template_rendered.permute(0,3,1,2)
@@ -448,7 +448,7 @@ class FullShapeAnalysis(Grid):
         deformation_field = pl_module.calculate_deformation(
                 self.shape_analysis_batch).detach()
         generated_rgba = pl_module.generator(z,
-                cameras=cameras, deformation_field=deformation_field,
+                cameras=cameras, ray_scale=scale, deformation_field=deformation_field,
                 deformed_verts=self.shape_analysis_batch['verts']\
                         [:,::pl_module.cfg.tps.template_subdivision]).cpu()
         generated_rgb, generated_alpha = generated_rgba[:,:3],\
