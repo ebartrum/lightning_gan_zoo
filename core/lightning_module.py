@@ -382,7 +382,7 @@ class ANIGAN(PIGAN):
                 cameras=cameras, ray_scale=scale,
                 deformation_field=deformation_field,
                 deformed_verts=shape_analysis['verts']\
-                        [:,::self.cfg.nerf.template_subdivision])
+                        [:,::self.cfg.tps.template_subdivision])
 
         if optimizer_idx == 0:
             out = self.pigan_disc_loss(real_sampled, fake[:,:3])
@@ -398,12 +398,11 @@ class ANIGAN(PIGAN):
         return out
 
     def calculate_deformation(self, shape_analysis):
-        verts = shape_analysis['verts'][:,::self.cfg.nerf.template_subdivision]
+        verts = shape_analysis['verts'][:,::self.cfg.tps.template_subdivision]
         template_verts =\
-            shape_analysis['mean_shape'][:,::self.cfg.nerf.template_subdivision]
-        tps_lambda = 0
+            shape_analysis['mean_shape'][:,::self.cfg.tps.template_subdivision]
         coefficient = tps_functions.find_coefficients(
-            verts, template_verts, tps_lambda).detach()
+            verts, template_verts, self.cfg.tps.lambda_).detach()
         return coefficient
 
     def validation_step(self, batch, batch_idx):
