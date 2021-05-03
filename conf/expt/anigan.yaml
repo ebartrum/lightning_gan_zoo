@@ -68,5 +68,5 @@ figure_details:
   fid_callback: False
   save_all: True
 defaults:
- # - /figures@figures.full_shape_analysis: full_shape_analysis
+ - /figures@figures.full_shape_analysis: full_shape_analysis
  - override /dataset: birds_analysed
