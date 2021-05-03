@@ -30,6 +30,7 @@ from pytorch3d.renderer import (
 )
 from pytorch3d.structures import Meshes, Pointclouds
 from torch.cuda.amp import autocast
+from core.submodules.tps_deformation.tps import functions as tps_functions
 
 class BaseGAN(pl.LightningModule):
     def __init__(self, cfg, logging_dir):
@@ -350,11 +351,16 @@ class ANIGAN(PIGAN):
 
         verts_rgb = torch.ones_like(template_verts)
         textures = TexturesVertex(verts_features=verts_rgb.to(self.device))
-        mesh = Meshes(verts=template_verts, faces=shape_analysis['faces'], textures=textures)
+        mesh = Meshes(verts=shape_analysis['verts'],
+                faces=shape_analysis['faces'],
+                textures=textures)
+
         with autocast(enabled=False):
             silhouette_images = self.renderer_silhouette(
                     mesh, cameras=cameras, lights=self.lights).detach()
             silhouette_images = silhouette_images[:,:,:,3].unsqueeze(-1)
+
+        # silhouette_images = shape_analysis['mask_pred'].unsqueeze(-1)
 
         # import matplotlib.pyplot as plt
         # silhouette_images = silhouette_images.permute(0,3,1,2)
@@ -370,8 +376,12 @@ class ANIGAN(PIGAN):
 
         z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
+
+        deformation_field = self.calculate_deformation(shape_analysis)
         fake = self.generator(z, sample_res=self.training_resolution,
-                cameras=cameras, ray_scale=scale)
+                cameras=cameras, ray_scale=scale,
+                deformation_field=deformation_field,
+                deformed_verts=shape_analysis['verts'])
 
         if optimizer_idx == 0:
             out = self.pigan_disc_loss(real_sampled, fake[:,:3])
@@ -385,6 +395,14 @@ class ANIGAN(PIGAN):
         #Step the training resolution scheduler
         self.discriminator.update_iter_()
         return out
+
+    def calculate_deformation(self, shape_analysis):
+        verts = shape_analysis['verts']
+        template_verts = shape_analysis['mean_shape']
+        tps_lambda = 0
+        coefficient = tps_functions.find_coefficients(
+            verts, template_verts, tps_lambda).detach()
+        return coefficient
 
     def validation_step(self, batch, batch_idx):
         real, _, shape_analysis = batch

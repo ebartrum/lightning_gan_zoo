@@ -425,7 +425,7 @@ class FullShapeAnalysis(Grid):
         template_verts = self.shape_analysis_batch['mean_shape'].to(
                 pl_module.device)
         # template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
-        template_mesh = Meshes(verts=template_verts, faces=faces, textures=textures)
+        template_mesh = Meshes(verts=verts, faces=faces, textures=textures)
         template_rendered = renderer(template_mesh)[:,:,:,:3].cpu()
         template_rendered = template_rendered.permute(0,3,1,2)
 
@@ -439,8 +439,11 @@ class FullShapeAnalysis(Grid):
         z = pl_module.noise_distn.sample((self.n_objs,
             pl_module.cfg.model.noise_dim)
                 ).to(pl_module.device)
+
+        deformation_field = pl_module.calculate_deformation(shape_analysis)
         generated_rgba = pl_module.generator(z,
-                cameras=cameras).cpu()
+                cameras=cameras, deformation_field=deformation_field,
+                deformed_verts=shape_analysis['verts']).cpu()
         generated_rgb, generated_alpha = generated_rgba[:,:3],\
                 generated_rgba[:,3]
         generated_alpha = torch.stack(3*[generated_alpha], dim=1)

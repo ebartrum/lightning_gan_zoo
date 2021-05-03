@@ -6,6 +6,7 @@ from .harmonic_embedding import HarmonicEmbedding
 from torch import nn
 from torch.nn import functional as F
 import math
+from core.submodules.tps_deformation.tps import functions as tps_functions
 
 def leaky_relu(p = 0.2):
     return nn.LeakyReLU(p)
@@ -240,6 +241,9 @@ class SirenSingleShape(torch.nn.Module):
         density_noise_std: float = 0.0,
         **kwargs,
     ):
+        tps_coefficient, deformed_verts = kwargs['deformation_field'],\
+                kwargs['deformed_verts']
+        
         rays_points_world = ray_bundle_to_ray_points(ray_bundle)
         ray_directions = torch.nn.functional.normalize(ray_bundle.directions, dim=-1)
         ray_directions = ray_directions.unsqueeze(2).expand(
@@ -249,12 +253,22 @@ class SirenSingleShape(torch.nn.Module):
         gammas, betas = self.mapping(z)
         rgb_gamma, rgb_beta = self.rgb_mapping(z)
 
-        x = self.siren(rays_points_world, gammas, betas)
+        if tps_coefficient is not None:
+            rays_input_shape = rays_points_world.shape
+            rays_2d = rays_points_world.flatten(start_dim=1, end_dim=-2)
+            rays_points_deformed = tps_functions.transform(rays_2d,
+                deformed_verts, tps_coefficient)
+            rays_points_deformed = rays_points_deformed.reshape(
+                    rays_input_shape)
+        else:
+            rays_points_deformed = rays_points_world
+
+        x = self.siren(rays_points_deformed, gammas, betas)
         x = torch.cat((x,ray_directions), -1)
         x = self.to_rgb_siren(x, rgb_gamma[:,0], rgb_beta[:,0])
         rgb = self.to_rgb(x)
 
-        alpha = self.to_alpha(self.alpha_siren(rays_points_world))
+        alpha = self.to_alpha(self.alpha_siren(rays_points_deformed))
 
         rays_densities = torch.sigmoid(alpha)
         rays_colors = torch.sigmoid(rgb)
