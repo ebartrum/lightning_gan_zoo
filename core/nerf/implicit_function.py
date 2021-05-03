@@ -241,6 +241,7 @@ class SirenSingleShape(torch.nn.Module):
         density_noise_std: float = 0.0,
         **kwargs,
     ):
+        
         tps_coefficient, deformed_verts = kwargs['deformation_field'],\
                 kwargs['deformed_verts']
         

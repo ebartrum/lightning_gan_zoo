@@ -441,15 +441,15 @@ class FullShapeAnalysis(Grid):
                 ).to(pl_module.device)
 
         self.shape_analysis_batch['verts'] =\
-                self.shape_analysis_batch['verts'].to(pl_module.device)
+            self.shape_analysis_batch['verts'].to(pl_module.device)
         self.shape_analysis_batch['mean_shape'] =\
-                self.shape_analysis_batch['mean_shape'].to(pl_module.device)
-
+            self.shape_analysis_batch['mean_shape'].to(pl_module.device)
+        
         deformation_field = pl_module.calculate_deformation(
                 self.shape_analysis_batch).detach()
         generated_rgba = pl_module.generator(z,
                 cameras=cameras, deformation_field=deformation_field,
-                deformed_verts=self.shape_analysis_batch['verts']).cpu()
+                deformed_verts=self.shape_analysis_batch['verts'][:,::8]).cpu()
         generated_rgb, generated_alpha = generated_rgba[:,:3],\
                 generated_rgba[:,3]
         generated_alpha = torch.stack(3*[generated_alpha], dim=1)
