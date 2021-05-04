@@ -344,30 +344,11 @@ class ANIGAN(PIGAN):
         real, _, shape_analysis = batch
         cameras, scale = convert_cam_pred(shape_analysis['cam_pred'],
                 device=self.device)
-        # scale = torch.ones_like(scale)  #TODO: use scale
 
         template_verts = shape_analysis['mean_shape']
         template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
 
-        # verts_rgb = torch.ones_like(template_verts)
-        # textures = TexturesVertex(verts_features=verts_rgb.to(self.device))
-        # mesh = Meshes(verts=scale.unsqueeze(1).unsqueeze(1)*shape_analysis['verts'],
-        #         faces=shape_analysis['faces'],
-        #         textures=textures)
-
-        # with autocast(enabled=False):
-        #     silhouette_images = self.renderer_silhouette(
-        #             mesh, cameras=cameras, lights=self.lights).detach()
-        #     silhouette_images = silhouette_images[:,:,:,3].unsqueeze(-1)
-
-        silhouette_images = shape_analysis['mask_pred'].unsqueeze(-1)
-
-        # import matplotlib.pyplot as plt
-        # silhouette_images = silhouette_images.permute(0,3,1,2)
-        # plt.imshow((silhouette_images[0,3]*255).cpu().int())
-        # plt.show()
-        # plt.imshow((real[0].permute(1,2,0)*255).cpu().int())
-        # plt.show()
+        # silhouette_images = shape_analysis['mask_pred'].unsqueeze(-1)
 
         rays_xy = sample_full_xys(batch_size=len(real),
                 img_size=self.training_resolution).to(self.device)
@@ -389,7 +370,8 @@ class ANIGAN(PIGAN):
         if optimizer_idx == 1:
             out = self.pigan_gen_loss(fake[:,:3])
             silhouette_sampled = sample_images_at_xys(
-                    silhouette_images, rays_xy).squeeze(-1)
+                    shape_analysis['mask_pred'].unsqueeze(-1),
+                    rays_xy).squeeze(-1)
             silhouette_loss = ((fake[:,3] - silhouette_sampled)**2).mean()
             out = out + (self.cfg.loss_weight.silhouette * silhouette_loss)
 
