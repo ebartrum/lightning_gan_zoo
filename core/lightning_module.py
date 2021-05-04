@@ -325,20 +325,6 @@ class PIGAN(BaseGAN):
 class ANIGAN(PIGAN):
     def __init__(self, cfg, logging_dir):
         super().__init__(cfg, logging_dir)
-        sigma = 1e-4
-        self.lights = PointLights(device=self.device, location=[[0.0, 0.0, -3.0]])
-        raster_settings_silhouette = RasterizationSettings(
-            image_size=self.cfg.train.img_size, 
-            blur_radius=np.log(1. / 1e-4 - 1.)*sigma, 
-            faces_per_pixel=50, 
-        )
-
-        self.renderer_silhouette = MeshRenderer(
-            rasterizer=MeshRasterizer(
-                raster_settings=raster_settings_silhouette
-            ),
-            shader=SoftSilhouetteShader()
-        )
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         real, _, shape_analysis = batch
@@ -356,12 +342,12 @@ class ANIGAN(PIGAN):
         z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
 
-        deformation_parameters = self.calculate_deformation(shape_analysis)
+        deformation_parameters = self.generator.deformer.calculate_deformation(
+                shape_analysis)
         fake = self.generator(z, sample_res=self.training_resolution,
                 cameras=cameras, ray_scale=scale,
                 deformation_parameters=deformation_parameters,
-                deformed_verts=shape_analysis['verts']\
-                        [:,::self.cfg.tps.template_subdivision])
+                deformed_verts=shape_analysis['verts'])
 
         if optimizer_idx == 0:
             out = self.pigan_disc_loss(real_sampled, fake[:,:3])
@@ -376,14 +362,6 @@ class ANIGAN(PIGAN):
         #Step the training resolution scheduler
         self.discriminator.update_iter_()
         return out
-
-    def calculate_deformation(self, shape_analysis):
-        verts = shape_analysis['verts'][:,::self.cfg.tps.template_subdivision]
-        template_verts =\
-            shape_analysis['mean_shape'][:,::self.cfg.tps.template_subdivision]
-        coefficient = tps_functions.find_coefficients(
-            verts, template_verts, self.cfg.tps.lambda_).detach()
-        return coefficient
 
     def validation_step(self, batch, batch_idx):
         real, _, shape_analysis = batch

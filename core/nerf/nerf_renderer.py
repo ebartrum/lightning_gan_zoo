@@ -2,6 +2,7 @@
 from typing import List, Optional, Tuple
 
 import torch
+from torch import nn
 from pytorch3d.renderer import ray_bundle_to_ray_points,\
         FoVOrthographicCameras, ImplicitRenderer, RayBundle
 from pytorch3d.renderer.cameras import CamerasBase
@@ -30,7 +31,8 @@ class RadianceFieldRenderer(torch.nn.Module):
         siren_num_layers: int,
         white_bg: bool,
         single_shape: bool,
-        density_noise_std: float = 0.0
+        density_noise_std: float = 0.0,
+        deformer: nn.Module = None
     ):
         super().__init__()
 
@@ -46,7 +48,8 @@ class RadianceFieldRenderer(torch.nn.Module):
             rad_field = SirenSingleShape(
                     latent_z_dim=latent_z_dim,
                     num_layers=siren_num_layers,
-                    dim_hidden=siren_dim_hidden
+                    dim_hidden=siren_dim_hidden,
+                    deformer=deformer
                 )
         else:
             rad_field = SirenRadianceField(

@@ -195,7 +195,8 @@ class SirenSingleShape(torch.nn.Module):
         self,
         latent_z_dim: int,
         num_layers: int,
-        dim_hidden:int
+        dim_hidden:int,
+        deformer: nn.Module
     ):
         super().__init__()
 
@@ -234,6 +235,8 @@ class SirenSingleShape(torch.nn.Module):
 
         self.to_rgb = nn.Linear(dim_hidden, 3)
 
+        self.deformer = deformer
+
     def forward(
         self,
         ray_bundle: RayBundle,
@@ -257,7 +260,7 @@ class SirenSingleShape(torch.nn.Module):
         if deformation_parameters is not None:
             rays_input_shape = rays_points_world.shape
             rays_2d = rays_points_world.flatten(start_dim=1, end_dim=-2)
-            rays_points_deformed = tps_functions.transform(rays_2d,
+            rays_points_deformed = self.deformer.transform(rays_2d,
                 deformed_verts, deformation_parameters)
             rays_points_deformed = rays_points_deformed.reshape(
                     rays_input_shape)

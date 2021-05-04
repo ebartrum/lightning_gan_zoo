@@ -30,7 +30,7 @@ discriminator:
   init_chan: "${train.features_disc}"
   init_resolution: "${resolution_annealing.resolutions.0}"
 generator:
-  _target_: core.models.pigan.Generator
+  _target_: core.models.anigan.Generator
   channels_noise: "${model.noise_dim}"
   channels_img: "${train.channels_img}"
   features_g: "${train.features_gen}"
