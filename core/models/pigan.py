@@ -66,7 +66,8 @@ class Generator(nn.Module):
         return cameras
 
     def forward(self, z, sample_res=None, cameras=None, ray_scale=None,
-            deformation_parameters=None, deformed_verts=None):
+            deformation_parameters=None, deformed_verts=None,
+            mean_shape_verts=None):
         if sample_res is None:
             sample_res = self.img_size
         rays_xy = sample_full_xys(batch_size=len(z),
@@ -80,7 +81,8 @@ class Generator(nn.Module):
 
         rgba_out = self.nerf_renderer(z, cameras, rays_xy,
                 deformation_parameters=deformation_parameters,
-                deformed_verts=deformed_verts)
+                deformed_verts=deformed_verts,
+                mean_shape_verts=mean_shape_verts)
         rgba_out = rgba_out.permute(0,3,1,2)
         return rgba_out
 

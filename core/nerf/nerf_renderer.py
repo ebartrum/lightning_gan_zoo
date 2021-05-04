@@ -104,7 +104,8 @@ class RadianceFieldRenderer(torch.nn.Module):
         chunk_idx: int,
         rays_xy: torch.Tensor,
         deformation_parameters: torch.Tensor = None,
-        deformed_verts: torch.Tensor = None
+        deformed_verts: torch.Tensor = None,
+        mean_shape_verts: torch.Tensor = None
     ) -> dict:
 
         """
@@ -131,7 +132,8 @@ class RadianceFieldRenderer(torch.nn.Module):
                 ray_weights=coarse_weights,
                 rays_xy=rays_xy,
                 deformation_parameters=deformation_parameters,
-                deformed_verts=deformed_verts
+                deformed_verts=deformed_verts,
+                mean_shape_verts=mean_shape_verts
             )
 
             if renderer_pass == "coarse":
@@ -171,7 +173,8 @@ class RadianceFieldRenderer(torch.nn.Module):
         camera: CamerasBase,
         rays_xy: torch.Tensor,
         deformation_parameters: torch.Tensor = None,
-        deformed_verts: torch.Tensor = None
+        deformed_verts: torch.Tensor = None,
+        mean_shape_verts: torch.Tensor = None
     ) -> torch.Tensor:
 
         batch_size, device = len(z), z.device
@@ -187,7 +190,8 @@ class RadianceFieldRenderer(torch.nn.Module):
                 chunk_idx,
                 rays_xy,
                 deformation_parameters=deformation_parameters,
-                deformed_verts=deformed_verts
+                deformed_verts=deformed_verts,
+                mean_shape_verts=mean_shape_verts
             )
             for chunk_idx in range(n_chunks)
         ]

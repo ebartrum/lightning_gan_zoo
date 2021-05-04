@@ -245,8 +245,8 @@ class SirenSingleShape(torch.nn.Module):
         **kwargs,
     ):
         
-        deformation_parameters, deformed_verts = kwargs['deformation_parameters'],\
-                kwargs['deformed_verts']
+        deformation_parameters, deformed_verts, mean_shape_verts = kwargs['deformation_parameters'],\
+                kwargs['deformed_verts'], kwargs['mean_shape_verts']
         
         rays_points_world = ray_bundle_to_ray_points(ray_bundle)
         ray_directions = torch.nn.functional.normalize(ray_bundle.directions, dim=-1)
@@ -257,11 +257,11 @@ class SirenSingleShape(torch.nn.Module):
         gammas, betas = self.mapping(z)
         rgb_gamma, rgb_beta = self.rgb_mapping(z)
 
-        if deformation_parameters is not None:
+        if deformation_parameters is not None or deformed_verts is not None:
             rays_input_shape = rays_points_world.shape
             rays_2d = rays_points_world.flatten(start_dim=1, end_dim=-2)
             rays_points_deformed = self.deformer.transform(rays_2d,
-                deformed_verts, deformation_parameters)
+                deformed_verts, mean_shape_verts, deformation_parameters)
             rays_points_deformed = rays_points_deformed.reshape(
                     rays_input_shape)
         else:
