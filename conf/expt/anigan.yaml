@@ -55,9 +55,10 @@ nerf:
   siren_num_layers: MISSING
   white_bg: True
   single_shape: True
-tps:
-  template_subdivision: 8
-  lambda_: 0
+  deformer:
+    _target_: core.anigan.deformer.TPSDeformer
+    template_subdivision: 8
+    lambda_: 0
 save_ckpts: False
 calc_fid: False
 use_resolution_annealing: True

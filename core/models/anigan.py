@@ -1,13 +1,14 @@
 from core.models import pigan
 from core.nerf.nerf_renderer import RadianceFieldRenderer
 from core.anigan.deformer import TPSDeformer
+from hydra.utils import instantiate
 
 class Generator(pigan.Generator):
     def __init__(self, channels_noise, channels_img, features_g,
             nerf_cfg, view_args, img_size=64):
         super(Generator, self).__init__(channels_noise, channels_img,
                 features_g, nerf_cfg, view_args, img_size=64)
-        self.deformer = TPSDeformer(template_subdivision=8, lambda_=0)
+        self.deformer = instantiate(nerf_cfg.deformer)
         self.nerf_renderer = RadianceFieldRenderer(
             n_pts_per_ray=nerf_cfg.n_pts_per_ray,
             n_pts_per_ray_fine=nerf_cfg.n_pts_per_ray_fine,
