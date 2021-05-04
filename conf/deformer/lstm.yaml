@@ -1,0 +1,2 @@
+_target_: core.anigan.deformer.LSTMDeformer
+template_subdivision: 8

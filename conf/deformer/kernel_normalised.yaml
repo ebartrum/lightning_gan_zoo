@@ -1,4 +1,4 @@
 _target_: core.anigan.deformer.KernelDeformer
 template_subdivision: 8
-sigma: 3
+sigma: 0.5
 normalised: True
