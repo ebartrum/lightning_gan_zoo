@@ -55,10 +55,11 @@ nerf:
   siren_num_layers: MISSING
   white_bg: True
   single_shape: True
-  deformer:
-    _target_: core.anigan.deformer.TPSDeformer
-    template_subdivision: 8
-    lambda_: 0
+  deformer: "${deformer}"
+  # deformer:
+  #   _target_: core.anigan.deformer.TPSDeformer
+  #   template_subdivision: 8
+  #   lambda_: 0
 save_ckpts: False
 calc_fid: False
 use_resolution_annealing: True
@@ -72,5 +73,6 @@ figure_details:
   fid_callback: False
   save_all: True
 defaults:
+ - /deformer: tps
  - /figures@figures.full_shape_analysis: full_shape_analysis
  - override /dataset: birds_analysed
