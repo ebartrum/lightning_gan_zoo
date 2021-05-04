@@ -242,7 +242,7 @@ class SirenSingleShape(torch.nn.Module):
         **kwargs,
     ):
         
-        tps_coefficient, deformed_verts = kwargs['deformation_field'],\
+        tps_coefficient, deformed_verts = kwargs['deformation_parameters'],\
                 kwargs['deformed_verts']
         
         rays_points_world = ray_bundle_to_ray_points(ray_bundle)

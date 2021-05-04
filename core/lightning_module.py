@@ -356,10 +356,10 @@ class ANIGAN(PIGAN):
         z = self.noise_distn.sample((len(real),
                 self.cfg.model.noise_dim)).to(self.device)
 
-        deformation_field = self.calculate_deformation(shape_analysis)
+        deformation_parameters = self.calculate_deformation(shape_analysis)
         fake = self.generator(z, sample_res=self.training_resolution,
                 cameras=cameras, ray_scale=scale,
-                deformation_field=deformation_field,
+                deformation_parameters=deformation_parameters,
                 deformed_verts=shape_analysis['verts']\
                         [:,::self.cfg.tps.template_subdivision])
 
