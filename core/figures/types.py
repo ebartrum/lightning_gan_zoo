@@ -37,6 +37,7 @@ from pytorch3d.renderer import (
 )
 from pytorch3d.structures import Meshes, Pointclouds
 from torch.cuda.amp import autocast
+from torch.nn import functional as F
 
 class Figure(Callback):
     def __init__(self, cfg, parent_dir, monitor=None):
@@ -377,12 +378,6 @@ class FullShapeAnalysis(Grid):
             blur_radius=0.0, 
             faces_per_pixel=1, 
         )
-        sigma = 1e-4
-        self.raster_settings_silhouette = RasterizationSettings(
-            image_size=cfg.img_size, 
-            blur_radius=np.log(1. / 1e-4 - 1.)*sigma, 
-            faces_per_pixel=50, 
-        )
         self.lights = PointLights(
                 location=[[0.0, 0.0, -3.0]])
 
@@ -410,31 +405,14 @@ class FullShapeAnalysis(Grid):
                 lights=self.lights.to(pl_module.device)
             )
         )
-
-        renderer_silhouette = MeshRenderer(
-            rasterizer=MeshRasterizer(
-                raster_settings=self.raster_settings_silhouette
-            ),
-            shader=SoftSilhouetteShader()
-        )
-
         
         rendered = renderer(mesh, cameras=cameras)[:,:,:,:3].cpu()
         rendered = rendered.permute(0,3,1,2)
 
-        template_verts = self.shape_analysis_batch['mean_shape'].to(
-                pl_module.device)
-        template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
-        template_mesh = Meshes(verts=verts, faces=faces, textures=textures)
-        template_rendered = renderer(template_mesh)[:,:,:,:3].cpu()
-        template_rendered = template_rendered.permute(0,3,1,2)
-
-        with autocast(enabled=False):
-            silhouette_images = renderer_silhouette(
-                    template_mesh, cameras=cameras, lights=self.lights).detach()
-            silhouette_images = silhouette_images[:,:,:,3].unsqueeze(-1)
-            silhouette_images = silhouette_images.permute(0,3,1,2)
-            silhouette_images = torch.cat(3*[silhouette_images],1).cpu()
+        silhouette_images = self.shape_analysis_batch['mask_pred']
+        silhouette_images = torch.stack(3*[silhouette_images],1)
+        silhouette_images = F.interpolate(
+                silhouette_images, size=pl_module.cfg.train.img_size)
 
         z = pl_module.noise_distn.sample((self.n_objs,
             pl_module.cfg.model.noise_dim)
@@ -448,11 +426,12 @@ class FullShapeAnalysis(Grid):
         deformation_field = pl_module.calculate_deformation(
                 self.shape_analysis_batch).detach()
         generated_rgba = pl_module.generator(z,
-                cameras=cameras, ray_scale=scale, deformation_field=deformation_field,
+                cameras=cameras, ray_scale=scale,
+                deformation_field=deformation_field,
                 deformed_verts=self.shape_analysis_batch['verts']\
                         [:,::pl_module.cfg.tps.template_subdivision]).cpu()
         generated_rgb, generated_alpha = generated_rgba[:,:3],\
                 generated_rgba[:,3]
         generated_alpha = torch.stack(3*[generated_alpha], dim=1)
-        return [self.img_batch, rendered, template_rendered, silhouette_images,
+        return [self.img_batch, rendered, silhouette_images,
                 generated_rgb, generated_alpha]
