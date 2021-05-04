@@ -1,0 +1,3 @@
+_target_: core.anigan.deformer.RBFDeformer
+template_subdivision: 8
+lambda_: 0
