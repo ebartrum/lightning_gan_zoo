@@ -348,8 +348,6 @@ class ANIGAN(PIGAN):
         template_verts = shape_analysis['mean_shape']
         template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
 
-        # silhouette_images = shape_analysis['mask_pred'].unsqueeze(-1)
-
         rays_xy = sample_full_xys(batch_size=len(real),
                 img_size=self.training_resolution).to(self.device)
         real_sampled = sample_images_at_xys(real.permute(0,2,3,1), rays_xy)
