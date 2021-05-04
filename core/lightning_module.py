@@ -349,18 +349,18 @@ class ANIGAN(PIGAN):
         template_verts = shape_analysis['mean_shape']
         template_verts = scale.unsqueeze(1).unsqueeze(1)*template_verts
 
-        verts_rgb = torch.ones_like(template_verts)
-        textures = TexturesVertex(verts_features=verts_rgb.to(self.device))
-        mesh = Meshes(verts=scale.unsqueeze(1).unsqueeze(1)*shape_analysis['verts'],
-                faces=shape_analysis['faces'],
-                textures=textures)
+        # verts_rgb = torch.ones_like(template_verts)
+        # textures = TexturesVertex(verts_features=verts_rgb.to(self.device))
+        # mesh = Meshes(verts=scale.unsqueeze(1).unsqueeze(1)*shape_analysis['verts'],
+        #         faces=shape_analysis['faces'],
+        #         textures=textures)
 
-        with autocast(enabled=False):
-            silhouette_images = self.renderer_silhouette(
-                    mesh, cameras=cameras, lights=self.lights).detach()
-            silhouette_images = silhouette_images[:,:,:,3].unsqueeze(-1)
+        # with autocast(enabled=False):
+        #     silhouette_images = self.renderer_silhouette(
+        #             mesh, cameras=cameras, lights=self.lights).detach()
+        #     silhouette_images = silhouette_images[:,:,:,3].unsqueeze(-1)
 
-        # silhouette_images = shape_analysis['mask_pred'].unsqueeze(-1)
+        silhouette_images = shape_analysis['mask_pred'].unsqueeze(-1)
 
         # import matplotlib.pyplot as plt
         # silhouette_images = silhouette_images.permute(0,3,1,2)
