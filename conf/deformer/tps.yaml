@@ -1,3 +1,3 @@
 _target_: core.anigan.deformer.TPSDeformer
-template_subdivision: 8
+template_subdivision: 1
 lambda_: 0
