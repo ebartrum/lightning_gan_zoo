@@ -20,3 +20,4 @@ accumulate_grad_batches:
     accumulation_factor: 4
 defaults:
   - /figures@figures.sample_grid: sample_grid_small
+  - /figures@figures.anigan_turntable: anigan_turntable_small

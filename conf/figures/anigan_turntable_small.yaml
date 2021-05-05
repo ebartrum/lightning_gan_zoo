@@ -1,0 +1,3 @@
+_target_: core.figures.types.AniganTurntable
+val_dataset: "${dataset.val}"
+n_frames: 8

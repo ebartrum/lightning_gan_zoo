@@ -1,0 +1,2 @@
+_target_: core.figures.types.AniganTurntable
+val_dataset: "${dataset.val}"

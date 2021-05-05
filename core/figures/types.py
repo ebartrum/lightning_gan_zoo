@@ -436,3 +436,64 @@ class FullShapeAnalysis(Grid):
         generated_alpha = torch.stack(3*[generated_alpha], dim=1)
         return [self.img_batch, rendered, silhouette_images,
                 generated_rgb, generated_alpha]
+
+class AniganTurntable(AnimationGrid):
+    def __init__(self, cfg, parent_dir, val_dataset, monitor=None,
+            n_frames=40, n_objs=4):
+        super(AniganTurntable, self).__init__(cfg, parent_dir,
+                monitor, n_frames=n_frames)
+        self.n_objs = n_objs
+        transform = transforms.Compose([
+            transforms.Resize((cfg.img_size,cfg.img_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[cfg.data_mean  for _ in range(cfg.channels_img)],
+                std=[cfg.data_std for _ in range(cfg.channels_img)])])
+        dataset = instantiate(val_dataset, transform=transform)
+        dataloader = DataLoader(dataset,
+                batch_size=n_objs, shuffle=False)
+        self.img_batch, _, self.shape_analysis_batch = dataloader.collate_fn(
+                [dataset[i] for i in range(n_objs)])
+
+    def draw(self, pl_module):
+        analysis_cameras, scale = convert_cam_pred(
+                self.shape_analysis_batch['cam_pred'].to(pl_module.device),
+                device=pl_module.device)
+
+        z = pl_module.noise_distn.sample((self.n_objs,
+            pl_module.cfg.model.noise_dim)
+                ).to(pl_module.device)
+
+        self.shape_analysis_batch['verts'] =\
+            self.shape_analysis_batch['verts'].to(pl_module.device)
+        self.shape_analysis_batch['mean_shape'] =\
+            self.shape_analysis_batch['mean_shape'].to(pl_module.device)
+        
+        deformation_parameters =\
+                pl_module.generator.deformer.calculate_deformation(
+                self.shape_analysis_batch)
+        
+        frame_list = []
+        for rot_angle in torch.linspace(0, 360, self.n_frames):
+            azimuth = torch.stack([rot_angle]*self.n_objs)
+            rot_matrix, _ = look_at_view_transform(
+                    dist=pl_module.generator.camera_dist,
+                    elev=torch.zeros_like(azimuth), azim=azimuth)
+            rot_matrix = rot_matrix.to(pl_module.device)
+            cameras = FoVOrthographicCameras(
+                R = analysis_cameras.R @ rot_matrix, 
+                T = analysis_cameras.T, 
+                device = pl_module.device,
+            )
+            generated_rgba = pl_module.generator(z,
+                    cameras=cameras, ray_scale=scale,
+                    deformation_parameters=deformation_parameters,
+                    deformed_verts=self.shape_analysis_batch['verts'],
+                    mean_shape_verts=self.shape_analysis_batch['mean_shape']).cpu()
+            generated_rgb, generated_alpha = generated_rgba[:,:3],\
+                    generated_rgba[:,3]
+            generated_alpha = torch.stack(3*[generated_alpha], dim=1)
+            rows = [generated_rgb, generated_alpha]
+            grid = self.make_grid(rows)
+            frame_list.append(grid)
+        return frame_list
