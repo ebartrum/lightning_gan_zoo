@@ -1,8 +1,18 @@
 import torch
 from torch import nn
 from core.submodules.tps_deformation.tps import functions as tps_functions
+from abc import abstractmethod
 
-class TPSDeformer(nn.Module):
+class Deformer(nn.Module):
+    def calculate_deformation(self, shape_analysis):
+        return None
+
+    @abstractmethod
+    def transform(self, x, deformed_verts, mean_shape_verts,
+            deformation_parameters):
+        pass
+
+class TPSDeformer(Deformer):
     def __init__(self, template_subdivision, lambda_):
         super(TPSDeformer, self).__init__()
         self.template_subdivision = template_subdivision
@@ -22,7 +32,7 @@ class TPSDeformer(nn.Module):
         return tps_functions.transform(x, deformed_verts,
                 deformation_parameters)
 
-class KernelDeformer(nn.Module):
+class KernelDeformer(Deformer):
     def __init__(self, template_subdivision, sigma, normalised=False):
         super(KernelDeformer, self).__init__()
         self.template_subdivision = template_subdivision
@@ -32,9 +42,6 @@ class KernelDeformer(nn.Module):
     def kernel(self, x, y):
         exponent = -torch.abs(x-y) / self.sigma**2
         return torch.exp(exponent)
-
-    def calculate_deformation(self, shape_analysis):
-        return None
 
     def kernel_based_transform(self, x, deformed_verts, mean_shape_verts):
         kernel_res = self.kernel(x.unsqueeze(1), deformed_verts.unsqueeze(2))
@@ -51,7 +58,7 @@ class KernelDeformer(nn.Module):
         return self.kernel_based_transform(x, deformed_verts,
                 mean_shape_verts)
 
-class RBFDeformer(nn.Module):
+class RBFDeformer(Deformer):
     def __init__(self, template_subdivision, lambda_):
         super(KernelDeformer, self).__init__()
         self.template_subdivision = template_subdivision
@@ -83,7 +90,6 @@ def init_recurrent_weights(self):
                 elif 'bias' in name:
                     param.data.fill_(0)
 
-
 def lstm_forget_gate_init(lstm_layer):
     for name, parameter in lstm_layer.named_parameters():
         if not "bias" in name: continue
@@ -108,7 +114,7 @@ def init_out_weights(self):
             elif 'bias' in name:
                 nn.init.constant_(param.data, 0)
 
-class LSTMDeformer(nn.Module):
+class LSTMDeformer(Deformer):
     def __init__(self, template_subdivision):
         super(LSTMDeformer, self).__init__()
         self.template_subdivision = template_subdivision
