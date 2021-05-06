@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from core.submodules.tps_deformation.tps import functions as tps_functions
+from core.nerf.implicit_function import SirenNet, MappingNetwork
 from abc import abstractmethod
 
 class Deformer(nn.Module):
@@ -141,7 +142,7 @@ class LSTMDeformer(Deformer):
         warper_input = combined_deformation_x.flatten(end_dim=1)
         n_chunks = len(warper_input)//6000
         warper_input_chunks = torch.chunk(warper_input, n_chunks, dim=0)
-        warp_chunks = [self.warper(chk)[-1][-1] for chk in warper_input_chunks]
+        warp_chunks = [self.warper(chk)[0] for chk in warper_input_chunks]
         out = torch.cat(warp_chunks)
         out = out.reshape(x.shape)
         return out
@@ -193,3 +194,58 @@ class Warper(nn.Module):
             xyz = xyz * step + xyz_ * (1 - step)
 
         return xyz, warping_param, warped_xyzs
+
+class SirenDeformer(Deformer):
+    def __init__(self, template_subdivision):
+        super(SirenDeformer, self).__init__()
+        self.template_subdivision = template_subdivision
+        self.latent_size = 128
+        self.offset_mlp = nn.Sequential(
+          nn.Linear(243, 256),
+          nn.ReLU(),
+          nn.Linear(256, 256),
+          nn.ReLU(),
+          nn.Linear(256, 256),
+          nn.ReLU(),
+          nn.Linear(256, 128),
+          )
+        num_layers = 5
+        self.siren = SirenNet(
+                dim_in = 3,
+                dim_hidden = 128,
+                dim_out = 3,
+                num_layers = num_layers 
+                )
+        self.mapping = MappingNetwork(
+            dim = 128,
+            dim_out = 128,
+            n_heads = num_layers
+        )
+        
+    def calculate_deformation(self, shape_analysis):
+        verts = shape_analysis['verts'][:,::self.template_subdivision]
+        template_verts =\
+            shape_analysis['mean_shape'][:,::self.template_subdivision]
+        # offsets = verts.flatten(1) - template_verts.flatten(1)
+        offsets = template_verts.flatten(1)
+        latent = self.offset_mlp(offsets) 
+        return latent
+
+    def transform(self, x, deformed_verts, mean_shape_verts,
+            deformation_parameters):
+        n_ray_pts = x.shape[1]
+        gammas, betas = self.mapping(deformation_parameters)
+        gammas = gammas.unsqueeze(1).repeat(1,n_ray_pts,1,1)
+        betas = betas.unsqueeze(1).repeat(1,n_ray_pts,1,1)
+        siren_input = x.flatten(end_dim=1)
+        gammas_input = gammas.flatten(end_dim=1)
+        betas_input = betas.flatten(end_dim=1)
+        n_chunks = len(siren_input)//6000
+        siren_input_chunks = torch.chunk(siren_input, n_chunks, dim=0)
+        gammas_input_chunks = torch.chunk(gammas_input, n_chunks, dim=0)
+        betas_input_chunks = torch.chunk(betas_input, n_chunks, dim=0)
+        siren_chunks = [self.siren(i, g, b) for i,g,b in zip(
+            siren_input_chunks, gammas_input_chunks, betas_input_chunks)]
+        offsets = torch.cat(siren_chunks)
+        offsets = offsets.reshape(x.shape)
+        return x + offsets
