@@ -348,7 +348,8 @@ class ANIGAN(PIGAN):
                 cameras=cameras, ray_scale=scale,
                 deformation_parameters=deformation_parameters,
                 deformed_verts=shape_analysis['verts'],
-                mean_shape_verts=shape_analysis['mean_shape'])
+                mean_shape_verts=shape_analysis['mean_shape'],
+                kp_verts=shape_analysis['kp_verts'])
 
         if optimizer_idx == 0:
             out = self.pigan_disc_loss(real_sampled, fake[:,:3])

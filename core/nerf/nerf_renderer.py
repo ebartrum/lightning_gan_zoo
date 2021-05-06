@@ -32,7 +32,8 @@ class RadianceFieldRenderer(torch.nn.Module):
         white_bg: bool,
         single_shape: bool,
         density_noise_std: float = 0.0,
-        deformer: nn.Module = None
+        deformer: nn.Module = None,
+        siren_input_channels: int = 3
     ):
         super().__init__()
 
@@ -49,7 +50,8 @@ class RadianceFieldRenderer(torch.nn.Module):
                     latent_z_dim=latent_z_dim,
                     num_layers=siren_num_layers,
                     dim_hidden=siren_dim_hidden,
-                    deformer=deformer
+                    deformer=deformer,
+                    input_channels = siren_input_channels
                 )
         else:
             rad_field = SirenRadianceField(
@@ -105,7 +107,8 @@ class RadianceFieldRenderer(torch.nn.Module):
         rays_xy: torch.Tensor,
         deformation_parameters: torch.Tensor = None,
         deformed_verts: torch.Tensor = None,
-        mean_shape_verts: torch.Tensor = None
+        mean_shape_verts: torch.Tensor = None,
+        kp_verts: torch.Tensor = None
     ) -> dict:
 
         """
@@ -133,7 +136,8 @@ class RadianceFieldRenderer(torch.nn.Module):
                 rays_xy=rays_xy,
                 deformation_parameters=deformation_parameters,
                 deformed_verts=deformed_verts,
-                mean_shape_verts=mean_shape_verts
+                mean_shape_verts=mean_shape_verts,
+                kp_verts=kp_verts
             )
 
             if renderer_pass == "coarse":
@@ -174,7 +178,8 @@ class RadianceFieldRenderer(torch.nn.Module):
         rays_xy: torch.Tensor,
         deformation_parameters: torch.Tensor = None,
         deformed_verts: torch.Tensor = None,
-        mean_shape_verts: torch.Tensor = None
+        mean_shape_verts: torch.Tensor = None,
+        kp_verts: torch.Tensor = None
     ) -> torch.Tensor:
 
         batch_size, device = len(z), z.device
@@ -191,7 +196,8 @@ class RadianceFieldRenderer(torch.nn.Module):
                 rays_xy,
                 deformation_parameters=deformation_parameters,
                 deformed_verts=deformed_verts,
-                mean_shape_verts=mean_shape_verts
+                mean_shape_verts=mean_shape_verts,
+                kp_verts=kp_verts
             )
             for chunk_idx in range(n_chunks)
         ]

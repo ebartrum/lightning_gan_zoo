@@ -422,6 +422,8 @@ class FullShapeAnalysis(Grid):
             self.shape_analysis_batch['verts'].to(pl_module.device)
         self.shape_analysis_batch['mean_shape'] =\
             self.shape_analysis_batch['mean_shape'].to(pl_module.device)
+        self.shape_analysis_batch['kp_verts'] =\
+            self.shape_analysis_batch['kp_verts'].to(pl_module.device)
         
         deformation_parameters =\
                 pl_module.generator.deformer.calculate_deformation(
@@ -430,7 +432,8 @@ class FullShapeAnalysis(Grid):
                 cameras=cameras, ray_scale=scale,
                 deformation_parameters=deformation_parameters,
                 deformed_verts=self.shape_analysis_batch['verts'],
-                mean_shape_verts=self.shape_analysis_batch['mean_shape']).cpu()
+                mean_shape_verts=self.shape_analysis_batch['mean_shape'],
+                kp_verts=self.shape_analysis_batch['kp_verts']).cpu()
         generated_rgb, generated_alpha = generated_rgba[:,:3],\
                 generated_rgba[:,3]
         generated_alpha = torch.stack(3*[generated_alpha], dim=1)
@@ -489,7 +492,8 @@ class AniganTurntable(AnimationGrid):
                     cameras=cameras, ray_scale=scale,
                     deformation_parameters=deformation_parameters,
                     deformed_verts=self.shape_analysis_batch['verts'],
-                    mean_shape_verts=self.shape_analysis_batch['mean_shape']).cpu()
+                    mean_shape_verts=self.shape_analysis_batch['mean_shape'],
+                    kp_verts=self.shape_analysis_batch['kp_verts']).cpu()
             generated_rgb, generated_alpha = generated_rgba[:,:3],\
                     generated_rgba[:,3]
             generated_alpha = torch.stack(3*[generated_alpha], dim=1)

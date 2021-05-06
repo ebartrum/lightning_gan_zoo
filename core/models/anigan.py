@@ -23,5 +23,6 @@ class Generator(pigan.Generator):
             latent_z_dim=nerf_cfg.latent_z_dim,
             white_bg=nerf_cfg.white_bg,
             single_shape=nerf_cfg.single_shape,
-            deformer=self.deformer
+            deformer=self.deformer,
+            siren_input_channels=45
         )

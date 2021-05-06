@@ -1,0 +1,2 @@
+_target_: core.anigan.deformer.DisplacementDeformer
+template_subdivision: 8

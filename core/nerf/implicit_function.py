@@ -196,9 +196,11 @@ class SirenSingleShape(torch.nn.Module):
         latent_z_dim: int,
         num_layers: int,
         dim_hidden:int,
-        deformer: nn.Module
+        deformer: nn.Module,
+        input_channels: int = 3
     ):
         super().__init__()
+        self.input_channels = input_channels
 
         self.mapping = MappingNetwork(
             dim = latent_z_dim,
@@ -213,14 +215,14 @@ class SirenSingleShape(torch.nn.Module):
         )
 
         self.siren = SirenNet(
-            dim_in = 3,
+            dim_in = input_channels,
             dim_hidden = dim_hidden,
             dim_out = dim_hidden,
             num_layers = num_layers
         )
 
         self.alpha_siren = SirenNet(
-            dim_in = 3,
+            dim_in = input_channels,
             dim_hidden = dim_hidden,
             dim_out = dim_hidden,
             num_layers = num_layers
@@ -245,8 +247,10 @@ class SirenSingleShape(torch.nn.Module):
         **kwargs,
     ):
         
-        deformation_parameters, deformed_verts, mean_shape_verts = kwargs['deformation_parameters'],\
-                kwargs['deformed_verts'], kwargs['mean_shape_verts']
+        deformation_parameters, deformed_verts, mean_shape_verts, kp_verts =\
+                kwargs['deformation_parameters'],\
+                kwargs['deformed_verts'], kwargs['mean_shape_verts'],\
+                kwargs['kp_verts']
         
         rays_points_world = ray_bundle_to_ray_points(ray_bundle)
         ray_directions = torch.nn.functional.normalize(ray_bundle.directions, dim=-1)
@@ -261,11 +265,15 @@ class SirenSingleShape(torch.nn.Module):
             rays_input_shape = rays_points_world.shape
             rays_2d = rays_points_world.flatten(start_dim=1, end_dim=-2)
             rays_points_deformed = self.deformer.transform(rays_2d,
-                deformed_verts, mean_shape_verts, deformation_parameters)
+                deformed_verts, mean_shape_verts,
+                kp_verts, deformation_parameters)
             rays_points_deformed = rays_points_deformed.reshape(
-                    rays_input_shape)
+                    *rays_input_shape[:-1],-1)
+            
         else:
-            rays_points_deformed = rays_points_world
+            input_shape = rays_points_world.shape
+            output_shape = input_shape[:-1] + tuple([self.input_channels])
+            rays_points_deformed = torch.rand(output_shape).cuda()
 
         x = self.siren(rays_points_deformed, gammas, betas)
         x = torch.cat((x,ray_directions), -1)

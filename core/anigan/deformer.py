@@ -249,3 +249,16 @@ class SirenDeformer(Deformer):
         offsets = torch.cat(siren_chunks)
         offsets = offsets.reshape(x.shape)
         return x + offsets
+
+class DisplacementDeformer(Deformer):
+    def __init__(self, template_subdivision):
+        super(DisplacementDeformer, self).__init__()
+        self.template_subdivision = template_subdivision
+
+    def transform(self, x, deformed_verts, mean_shape_verts,
+            kp_verts, deformation_parameters):
+        # ctrl_pts = deformed_verts[:,::self.template_subdivision]
+        ctrl_pts = kp_verts
+        displacements = x.unsqueeze(2) - ctrl_pts.unsqueeze(1)
+        out = displacements.flatten(2,3)
+        return out
