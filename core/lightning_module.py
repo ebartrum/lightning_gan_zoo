@@ -38,7 +38,6 @@ class BaseGAN(pl.LightningModule):
         self.discriminator = instantiate(cfg.discriminator)
         self.generator = instantiate(cfg.generator)
         self.cfg=cfg
-        self.hparams=cfg
         self.logging_dir=logging_dir
         self.transform = transforms.Compose([
             transforms.Resize((cfg.train.img_size,cfg.train.img_size)),
